@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "677473249156",
+    "project_id": "ryaniva-4867f",
+    "storage_bucket": "ryaniva-4867f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:677473249156:android:d04d23b089aa19f2045fd1",
+        "android_client_info": {
+          "package_name": "com.example.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATmdZdVMqlEw2EwOpymnGYoxmHbkze8eM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

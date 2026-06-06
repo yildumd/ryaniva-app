@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
 
@@ -26,12 +27,18 @@ class AuthProvider extends ChangeNotifier {
 
     if (token != null && id != null) {
       _token = token;
-      _user = User(id: id, name: name ?? '', phone: phone ?? '', role: role ?? '');
+      _user = User(
+          id: id,
+          name: name ?? '',
+          phone: phone ?? '',
+          role: role ?? '');
       notifyListeners();
+      _saveFcmToken();
     }
   }
 
-  Future<bool> register(String name, String phone, String password, String role) async {
+  Future<bool> register(
+      String name, String phone, String password, String role) async {
     _loading = true;
     _error = '';
     notifyListeners();
@@ -96,6 +103,30 @@ class AuthProvider extends ChangeNotifier {
     await _storage.write(key: 'phone', value: _user!.phone);
     await _storage.write(key: 'role', value: _user!.role);
     notifyListeners();
+    _saveFcmToken();
+  }
+
+  Future<void> _saveFcmToken() async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+
+      await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      final fcmToken = await messaging.getToken();
+      if (fcmToken != null && _token.isNotEmpty) {
+        await ApiService.patch(
+          '/auth/fcm-token',
+          {'fcmToken': fcmToken},
+          token: _token,
+        );
+      }
+    } catch (e) {
+      // FCM token save failed silently
+    }
   }
 
   Future<void> logout() async {

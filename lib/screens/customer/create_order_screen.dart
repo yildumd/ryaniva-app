@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
+import '../payment/paystack_screen.dart';
 
 class CreateOrderScreen extends StatefulWidget {
   const CreateOrderScreen({super.key});
@@ -121,20 +122,30 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             : Colors.grey[100],
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: _paymentMethod == 'CASH' ? blue : Colors.transparent,
+                          color: _paymentMethod == 'CASH'
+                              ? blue
+                              : Colors.transparent,
                           width: 2,
                         ),
                       ),
                       child: Column(
                         children: [
                           Icon(Icons.money,
-                              color: _paymentMethod == 'CASH' ? blue : Colors.grey),
+                              color: _paymentMethod == 'CASH'
+                                  ? blue
+                                  : Colors.grey),
                           const SizedBox(height: 4),
                           Text('Cash',
                               style: TextStyle(
-                                color: _paymentMethod == 'CASH' ? blue : Colors.grey,
+                                color: _paymentMethod == 'CASH'
+                                    ? blue
+                                    : Colors.grey,
                                 fontWeight: FontWeight.w600,
                               )),
+                          const SizedBox(height: 2),
+                          Text('Pay on delivery',
+                              style: TextStyle(
+                                  color: Colors.grey[400], fontSize: 10)),
                         ],
                       ),
                     ),
@@ -152,20 +163,30 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             : Colors.grey[100],
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: _paymentMethod == 'CARD' ? orange : Colors.transparent,
+                          color: _paymentMethod == 'CARD'
+                              ? orange
+                              : Colors.transparent,
                           width: 2,
                         ),
                       ),
                       child: Column(
                         children: [
                           Icon(Icons.credit_card,
-                              color: _paymentMethod == 'CARD' ? orange : Colors.grey),
+                              color: _paymentMethod == 'CARD'
+                                  ? orange
+                                  : Colors.grey),
                           const SizedBox(height: 4),
                           Text('Card',
                               style: TextStyle(
-                                color: _paymentMethod == 'CARD' ? orange : Colors.grey,
+                                color: _paymentMethod == 'CARD'
+                                    ? orange
+                                    : Colors.grey,
                                 fontWeight: FontWeight.w600,
                               )),
+                          const SizedBox(height: 2),
+                          Text('Pay via Paystack',
+                              style: TextStyle(
+                                  color: Colors.grey[400], fontSize: 10)),
                         ],
                       ),
                     ),
@@ -186,7 +207,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             _itemTypeController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                                content: Text('Please fill all required fields')),
+                                content:
+                                    Text('Please fill all required fields')),
                           );
                           return;
                         }
@@ -208,40 +230,108 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             result['order'] != null &&
                             context.mounted) {
                           final breakdown = result['breakdown'];
-                          showDialog(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16)),
-                              title: const Text('Order Confirmed! 🎉'),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Distance: ${breakdown['distanceKm']} km'),
-                                  Text('Base fare: ₦${breakdown['baseFare']}'),
-                                  Text('Distance fare: ₦${breakdown['distanceFare']}'),
-                                  Text('Platform fee: ₦${breakdown['platformFee']}'),
-                                  const Divider(),
-                                  Text('Total: ₦${breakdown['total']}',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: orange,
-                                          fontSize: 18)),
+                          final order = result['order'];
+                          final totalAmount =
+                              (breakdown['total'] as num).toDouble();
+
+                          // If CARD payment selected, launch Paystack
+                          if (_paymentMethod == 'CARD') {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PaystackScreen(
+                                  email: auth.user?.phone != null
+                                      ? '${auth.user!.phone}@ryaniva.com'
+                                      : 'customer@ryaniva.com',
+                                  amount: totalAmount,
+                                  orderId: order['id'],
+                                  onPaymentComplete: (success) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(success
+                                              ? '✅ Payment successful!'
+                                              : '❌ Payment cancelled'),
+                                          backgroundColor: success
+                                              ? Colors.green
+                                              : Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ),
+                            );
+                            if (context.mounted) Navigator.pop(context);
+                            return;
+                          }
+
+                          // CASH — show breakdown dialog
+                          if (context.mounted) {
+                            showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16)),
+                                title: const Text('Order Confirmed! 🎉'),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                        'Distance: ${breakdown['distanceKm']} km'),
+                                    Text(
+                                        'Base fare: ₦${breakdown['baseFare']}'),
+                                    Text(
+                                        'Distance fare: ₦${breakdown['distanceFare']}'),
+                                    Text(
+                                        'Platform fee: ₦${breakdown['platformFee']}'),
+                                    const Divider(),
+                                    Text('Total: ₦${breakdown['total']}',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: orange,
+                                            fontSize: 18)),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange[50],
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                      ),
+                                      child: const Row(
+                                        children: [
+                                          Icon(Icons.info_outline,
+                                              color: Colors.orange, size: 16),
+                                          SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'Please have exact cash ready for the rider',
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.orange),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      Navigator.pop(context);
+                                    },
+                                    child: const Text('Done',
+                                        style: TextStyle(color: blue)),
+                                  ),
                                 ],
                               ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text('Done',
-                                      style: TextStyle(color: blue)),
-                                ),
-                              ],
-                            ),
-                          );
+                            );
+                          }
                         }
                       },
                 style: ElevatedButton.styleFrom(
@@ -252,11 +342,35 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 ),
                 child: orders.loading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Confirm Delivery',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600)),
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('Confirm Delivery',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w600)),
+                          if (_paymentMethod == 'CARD') ...[
+                            const SizedBox(width: 8),
+                            const Icon(Icons.lock_outline, size: 16),
+                          ]
+                        ],
+                      ),
               ),
             ),
+            if (_paymentMethod == 'CARD') ...[
+              const SizedBox(height: 12),
+              Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.security, size: 14, color: Colors.grey[400]),
+                    const SizedBox(width: 4),
+                    Text('Secured by Paystack',
+                        style:
+                            TextStyle(color: Colors.grey[400], fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
