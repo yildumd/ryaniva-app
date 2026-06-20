@@ -17,9 +17,11 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
   bool _profileLoaded = false;
   bool _hasProfile = false;
   Map<String, dynamic>? _riderProfile;
-  final _vehicleController = TextEditingController();
+  String _selectedBike = 'Motorcycle';
   late TabController _tabController;
   List<Order> _activeOrders = [];
+
+  final List<String> _bikeTypes = ['Motorcycle', 'Scooter', 'Bicycle'];
 
   @override
   void initState() {
@@ -81,12 +83,11 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
   }
 
   Future<void> _registerRider() async {
-    if (_vehicleController.text.isEmpty) return;
     final token = context.read<AuthProvider>().token;
     try {
       final res = await ApiService.post(
         '/riders/register',
-        {'vehicle': _vehicleController.text.trim()},
+        {'vehicle': _selectedBike},
         token: token,
       );
       if (res['rider'] != null) {
@@ -155,22 +156,32 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final orders = context.watch<OrderProvider>();
-    final green = const Color(0xFF1A7A3E);
+    const blue = Color(0xFF1A3A8F);
+    const orange = Color(0xFFE85C1A);
 
     if (!_profileLoaded) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+          body: Center(child: CircularProgressIndicator(color: Color(0xFF1A3A8F))));
     }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: green,
+        backgroundColor: blue,
         foregroundColor: Colors.white,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            const Text('Ryaniva Rider', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text('Hello, ${auth.user?.name ?? ''}', style: const TextStyle(fontSize: 12)),
+            Image.asset('assets/images/logo.png', height: 30),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Ryaniva Rider',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text('Hello, ${auth.user?.name ?? ''}',
+                    style: const TextStyle(fontSize: 11)),
+              ],
+            ),
           ],
         ),
         actions: [
@@ -183,7 +194,7 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
         bottom: _hasProfile && _riderProfile?['status'] == 'APPROVED'
             ? TabBar(
                 controller: _tabController,
-                indicatorColor: Colors.white,
+                indicatorColor: orange,
                 labelColor: Colors.white,
                 unselectedLabelColor: Colors.white70,
                 tabs: [
@@ -194,27 +205,29 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
             : null,
       ),
       body: !_hasProfile
-          ? _buildSetupScreen(green)
+          ? _buildSetupScreen(blue, orange)
           : _riderProfile?['status'] == 'PENDING'
-              ? _buildPendingScreen(green)
-              : Column(
-                  children: [
-                    _buildOnlineToggle(green),
-                    Expanded(
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildAvailableOrders(orders, green),
-                          _buildActiveOrders(green),
-                        ],
-                      ),
+              ? _buildPendingScreen(blue)
+              : _riderProfile?['status'] == 'SUSPENDED'
+                  ? _buildSuspendedScreen()
+                  : Column(
+                      children: [
+                        _buildOnlineToggle(blue, orange),
+                        Expanded(
+                          child: TabBarView(
+                            controller: _tabController,
+                            children: [
+                              _buildAvailableOrders(orders, blue, orange),
+                              _buildActiveOrders(blue, orange),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
     );
   }
 
-  Widget _buildOnlineToggle(Color green) {
+  Widget _buildOnlineToggle(Color blue, Color orange) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -226,26 +239,40 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             children: [
-              Text(_isOnline ? 'You are Online' : 'You are Offline',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              Text(_isOnline ? 'Receiving delivery requests' : 'Go online to start earning',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: (_isOnline ? Colors.green : Colors.grey).withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.motorcycle,
+                    color: _isOnline ? Colors.green : Colors.grey, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_isOnline ? 'You are Online' : 'You are Offline',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(_isOnline ? 'Receiving delivery requests' : 'Go online to start earning',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+                ],
+              ),
             ],
           ),
           Switch(
             value: _isOnline,
             onChanged: (_) => _toggleOnline(),
-            activeColor: green,
+            activeColor: orange,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAvailableOrders(OrderProvider orders, Color green) {
+  Widget _buildAvailableOrders(OrderProvider orders, Color blue, Color orange) {
     if (!_isOnline) {
       return Center(
         child: Column(
@@ -262,7 +289,9 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
       );
     }
 
-    if (orders.loading) return const Center(child: CircularProgressIndicator());
+    if (orders.loading) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF1A3A8F)));
+    }
 
     if (orders.orders.isEmpty) {
       return Center(
@@ -284,7 +313,8 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
         final order = orders.orders[index];
         return _orderCard(
           order: order,
-          green: green,
+          blue: blue,
+          orange: orange,
           action: ElevatedButton(
             onPressed: () async {
               final success = await orders.acceptOrder(
@@ -301,7 +331,7 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: green,
+              backgroundColor: blue,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -313,7 +343,7 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildActiveOrders(Color green) {
+  Widget _buildActiveOrders(Color blue, Color orange) {
     if (_activeOrders.isEmpty) {
       return Center(
         child: Column(
@@ -336,7 +366,8 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
 
         return _orderCard(
           order: order,
-          green: green,
+          blue: blue,
+          orange: orange,
           showStatus: true,
           action: ElevatedButton(
             onPressed: () => _updateOrderStatus(
@@ -344,7 +375,7 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
               isPicked ? 'DELIVERED' : 'PICKED',
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: isPicked ? Colors.blue : green,
+              backgroundColor: isPicked ? orange : blue,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -358,7 +389,8 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
 
   Widget _orderCard({
     required Order order,
-    required Color green,
+    required Color blue,
+    required Color orange,
     required Widget action,
     bool showStatus = false,
   }) {
@@ -380,7 +412,7 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
                 Text(order.itemType.toUpperCase(),
                     style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text('₦${order.price.toStringAsFixed(0)}',
-                    style: TextStyle(color: green, fontWeight: FontWeight.bold, fontSize: 18)),
+                    style: TextStyle(color: orange, fontWeight: FontWeight.bold, fontSize: 18)),
               ],
             ),
             if (showStatus) ...[
@@ -388,12 +420,14 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: order.status == 'PICKED' ? Colors.blue.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                  color: order.status == 'PICKED'
+                      ? orange.withOpacity(0.1)
+                      : Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(order.status,
                     style: TextStyle(
-                      color: order.status == 'PICKED' ? Colors.blue : Colors.orange,
+                      color: order.status == 'PICKED' ? orange : Colors.orange,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     )),
@@ -402,7 +436,7 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(Icons.radio_button_checked, color: green, size: 16),
+                Icon(Icons.radio_button_checked, color: blue, size: 16),
                 const SizedBox(width: 8),
                 Expanded(child: Text(order.pickupAddress, style: const TextStyle(fontSize: 13))),
               ],
@@ -410,7 +444,7 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.location_on, color: Colors.red, size: 16),
+                Icon(Icons.location_on, color: orange, size: 16),
                 const SizedBox(width: 8),
                 Expanded(child: Text(order.dropoffAddress, style: const TextStyle(fontSize: 13))),
               ],
@@ -430,7 +464,7 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildSetupScreen(Color green) {
+  Widget _buildSetupScreen(Color blue, Color orange) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -442,8 +476,8 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                  color: green.withOpacity(0.1), shape: BoxShape.circle),
-              child: Icon(Icons.delivery_dining, size: 40, color: green),
+                  color: blue.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(Icons.motorcycle, size: 40, color: blue),
             ),
           ),
           const SizedBox(height: 24),
@@ -453,34 +487,58 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
           ),
           const SizedBox(height: 8),
           Center(
-            child: Text('Tell us about your vehicle to start delivering',
+            child: Text('Select your bike type to start delivering',
                 style: TextStyle(color: Colors.grey[600]),
                 textAlign: TextAlign.center),
           ),
           const SizedBox(height: 40),
-          const Text('Vehicle Type',
+          const Text('Bike Type',
               style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
-          TextField(
-            controller: _vehicleController,
-            decoration: InputDecoration(
-              hintText: 'e.g. Motorcycle, Bicycle, Car',
-              prefixIcon: Icon(Icons.delivery_dining, color: green),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: green, width: 2),
-              ),
-            ),
+          Column(
+            children: _bikeTypes.map((bike) {
+              final isSelected = _selectedBike == bike;
+              return GestureDetector(
+                onTap: () => setState(() => _selectedBike = bike),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isSelected ? blue.withOpacity(0.08) : Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? blue : Colors.grey[300]!,
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.motorcycle,
+                          color: isSelected ? blue : Colors.grey[400]),
+                      const SizedBox(width: 12),
+                      Text(bike,
+                          style: TextStyle(
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            color: isSelected ? blue : Colors.black87,
+                            fontSize: 15,
+                          )),
+                      const Spacer(),
+                      if (isSelected)
+                        Icon(Icons.check_circle, color: orange, size: 20),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
               onPressed: _registerRider,
               style: ElevatedButton.styleFrom(
-                backgroundColor: green,
+                backgroundColor: orange,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -494,7 +552,7 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
     );
   }
 
-  Widget _buildPendingScreen(Color green) {
+  Widget _buildPendingScreen(Color blue) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -525,13 +583,42 @@ class _RiderHomeState extends State<RiderHome> with SingleTickerProviderStateMix
               icon: const Icon(Icons.refresh),
               label: const Text('Check Status'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: green,
-                side: BorderSide(color: green),
+                foregroundColor: blue,
+                side: BorderSide(color: blue),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuspendedScreen() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1), shape: BoxShape.circle),
+              child: const Icon(Icons.block, size: 40, color: Colors.red),
+            ),
+            const SizedBox(height: 24),
+            const Text('Account Suspended',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Text(
+              'Your rider account has been suspended. Please contact Ryaniva support for more information.',
+              style: TextStyle(color: Colors.grey[600], height: 1.6),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

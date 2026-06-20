@@ -112,4 +112,21 @@ class OrderProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<Map<String, dynamic>> cancelOrder(String orderId, String token) async {
+    try {
+      final res = await ApiService.patch(
+          '/orders/$orderId/cancel', {}, token: token);
+      return {'success': true, 'message': res['message'] ?? 'Order cancelled'};
+    } catch (e) {
+      String errorMsg = 'Failed to cancel order';
+      final errStr = e.toString();
+      if (errStr.contains('picked up')) {
+        errorMsg = 'Cannot cancel — item has already been picked up';
+      } else if (errStr.contains('delivered')) {
+        errorMsg = 'Cannot cancel a delivered order';
+      }
+      return {'success': false, 'message': errorMsg};
+    }
+  }
 }
