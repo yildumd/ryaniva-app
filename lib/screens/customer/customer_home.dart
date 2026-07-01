@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import 'create_order_screen.dart';
 import 'rate_order_screen.dart';
+import 'dart:async';
 
 class CustomerHome extends StatefulWidget {
   const CustomerHome({super.key});
@@ -34,7 +35,7 @@ class _CustomerHomeState extends State<CustomerHome> {
     final pages = [
       _HomeTab(auth: auth, orders: orders),
       _OrdersTab(auth: auth, orders: orders),
-      _TrackTab(orders: orders),
+      _TrackTab(orders: orders, auth: auth),
       _WalletTab(),
       _ProfileTab(auth: auth),
     ];
@@ -445,16 +446,39 @@ class _OrderCard extends StatelessWidget {
 }
 
 // ── TRACK TAB ──
-class _TrackTab extends StatelessWidget {
+class _TrackTab extends StatefulWidget {
   final dynamic orders;
-  const _TrackTab({required this.orders});
+  final dynamic auth;
+  const _TrackTab({required this.orders, required this.auth});
+
+  @override
+  State<_TrackTab> createState() => _TrackTabState();
+}
+
+class _TrackTabState extends State<_TrackTab> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto refresh every 10 seconds
+    _timer = Timer.periodic(const Duration(seconds: 10), (_) {
+      widget.orders.loadMyOrders(widget.auth.token);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     const blue = Color(0xFF1A3A8F);
     const orange = Color(0xFFE85C1A);
 
-    final activeOrders = orders.orders.where(
+    final activeOrders = widget.orders.orders.where(
       (o) => o.status == 'ACCEPTED' || o.status == 'PICKED' || o.status == 'REQUESTED'
     ).toList();
 
@@ -464,6 +488,12 @@ class _TrackTab extends StatelessWidget {
         backgroundColor: blue,
         foregroundColor: Colors.white,
         title: const Text('Track Orders', style: TextStyle(fontWeight: FontWeight.bold)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => widget.orders.loadMyOrders(widget.auth.token),
+          ),
+        ],
       ),
       body: activeOrders.isEmpty
           ? Center(
@@ -474,87 +504,154 @@ class _TrackTab extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text('No active deliveries', style: TextStyle(fontSize: 18, color: Colors.grey[500])),
                   const SizedBox(height: 8),
-                  Text('Active orders will show here', style: TextStyle(color: Colors.grey[400])),
+                  Text('Active orders will appear here and update automatically',
+                      style: TextStyle(color: Colors.grey[400]), textAlign: TextAlign.center),
                 ],
               ),
             )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: activeOrders.length,
-              itemBuilder: (context, index) {
-                final order = activeOrders[index];
-                final steps = ['REQUESTED', 'ACCEPTED', 'PICKED', 'DELIVERED'];
-                final currentStep = steps.indexOf(order.status);
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          : Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  color: Colors.green[50],
+                  child: Row(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(order.itemType.toUpperCase(),
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                          Text('₦${order.price.toStringAsFixed(0)}',
-                              style: const TextStyle(color: orange, fontWeight: FontWeight.bold, fontSize: 15)),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: List.generate(4, (i) {
-                          final labels = ['Requested', 'Accepted', 'Picked Up', 'Delivered'];
-                          final isActive = i <= currentStep;
-                          final isLast = i == 3;
-                          return Expanded(
-                            child: Row(
-                              children: [
-                                Column(
-                                  children: [
-                                    Container(
-                                      width: 28, height: 28,
-                                      decoration: BoxDecoration(
-                                        color: isActive ? blue : Colors.grey[200],
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        isActive ? Icons.check : Icons.circle_outlined,
-                                        color: isActive ? Colors.white : Colors.grey[400],
-                                        size: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(labels[i],
-                                        style: TextStyle(
-                                          fontSize: 9,
-                                          color: isActive ? blue : Colors.grey[400],
-                                          fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-                                        )),
-                                  ],
-                                ),
-                                if (!isLast)
-                                  Expanded(
-                                    child: Container(
-                                      height: 2,
-                                      margin: const EdgeInsets.only(bottom: 20),
-                                      color: i < currentStep ? blue : Colors.grey[200],
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ),
+                      const Icon(Icons.refresh, color: Colors.green, size: 14),
+                      const SizedBox(width: 6),
+                      Text('Auto-updating every 10 seconds',
+                          style: TextStyle(color: Colors.green[700], fontSize: 12)),
                     ],
                   ),
-                );
-              },
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: activeOrders.length,
+                    itemBuilder: (context, index) {
+                      final order = activeOrders[index];
+                      final steps = ['REQUESTED', 'ACCEPTED', 'PICKED', 'DELIVERED'];
+                      final currentStep = steps.indexOf(order.status);
+                      final stepLabels = ['Requested', 'Rider Accepted', 'Picked Up', 'Delivered'];
+                      final stepIcons = [
+                        Icons.receipt_long,
+                        Icons.person,
+                        Icons.inventory_2,
+                        Icons.check_circle,
+                      ];
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(order.itemType.toUpperCase(),
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                Text('₦${order.price.toStringAsFixed(0)}',
+                                    style: const TextStyle(color: orange, fontWeight: FontWeight.bold, fontSize: 15)),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Row(children: [
+                              const Icon(Icons.radio_button_checked, color: blue, size: 13),
+                              const SizedBox(width: 6),
+                              Expanded(child: Text(order.pickupAddress,
+                                  style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                            ]),
+                            const SizedBox(height: 3),
+                            Row(children: [
+                              const Icon(Icons.location_on, color: orange, size: 13),
+                              const SizedBox(width: 6),
+                              Expanded(child: Text(order.dropoffAddress,
+                                  style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                            ]),
+                            const SizedBox(height: 20),
+                            // Progress tracker
+                            Row(
+                              children: List.generate(4, (i) {
+                                final isActive = i <= currentStep;
+                                final isLast = i == 3;
+                                return Expanded(
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          children: [
+                                            Container(
+                                              width: 32, height: 32,
+                                              decoration: BoxDecoration(
+                                                color: isActive ? blue : Colors.grey[200],
+                                                shape: BoxShape.circle,
+                                                border: i == currentStep
+                                                    ? Border.all(color: orange, width: 2)
+                                                    : null,
+                                              ),
+                                              child: Icon(
+                                                stepIcons[i],
+                                                color: isActive ? Colors.white : Colors.grey[400],
+                                                size: 15,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(stepLabels[i],
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                  fontSize: 9,
+                                                  color: isActive ? blue : Colors.grey[400],
+                                                  fontWeight: i == currentStep ? FontWeight.bold : FontWeight.normal,
+                                                )),
+                                          ],
+                                        ),
+                                      ),
+                                      if (!isLast)
+                                        Container(
+                                          height: 2,
+                                          width: 20,
+                                          margin: const EdgeInsets.only(bottom: 20),
+                                          color: i < currentStep ? blue : Colors.grey[200],
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ),
+                            if (order.status == 'ACCEPTED' || order.status == 'PICKED') ...[
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: blue.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.motorcycle, color: blue, size: 16),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      order.status == 'ACCEPTED'
+                                          ? 'Rider is heading to pickup location'
+                                          : 'Rider has picked up your item and is on the way',
+                                      style: const TextStyle(fontSize: 12, color: blue),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
     );
   }

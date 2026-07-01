@@ -114,8 +114,10 @@ class _RiderHomeState extends State<RiderHome> {
       final res = await ApiService.patch('/orders/$orderId/status', {'status': status}, token: token);
       if (res['message'] != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'])));
-        _loadActiveOrders();
-        _loadOrders();
+        // Refresh everything
+        await _loadActiveOrders();
+        await _loadOrders();
+        await _loadProfile(); // This updates earnings, rating, trips
       }
     } catch (e) {}
   }
