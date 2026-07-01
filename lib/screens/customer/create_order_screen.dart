@@ -8,12 +8,12 @@ import '../../providers/order_provider.dart';
 import '../payment/flutterwave_screen.dart';
 
 class CreateOrderScreen extends StatefulWidget {
-  const CreateOrderScreen({super.key});
+  final String? preselectedType;
+  const CreateOrderScreen({super.key, this.preselectedType});
 
   @override
   State<CreateOrderScreen> createState() => _CreateOrderScreenState();
 }
-
 class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _pickupController = TextEditingController();
   final _dropoffController = TextEditingController();
@@ -33,9 +33,15 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   Timer? _pickupDebounce;
   Timer? _dropoffDebounce;
 
-  // Bounding box around Jos, Plateau State to bias results
   static const String _josViewbox = '8.6,9.7,9.1,10.1';
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.preselectedType != null) {
+      _itemTypeController.text = widget.preselectedType!;
+    }
+  }
   Future<List<Map<String, dynamic>>> _searchAddress(String query) async {
     if (query.trim().length < 3) return [];
     try {

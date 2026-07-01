@@ -27,8 +27,9 @@ class _FlutterwaveScreenState extends State<FlutterwaveScreen> {
   late final WebViewController _controller;
   bool _loading = true;
 
+  // LIVE KEY — Mrs Gloria Magit's Flutterwave account
   static const String _flutterwavePublicKey =
-      'FLWPUBK_TEST-a56fd4b37e9296f7fcccf958b73d3cfc-X';
+      'FLWPUBK-de7f05a23d41637e5223b1d4939f4dd9-X';
 
   String _sanitize(String input) {
     return input.replaceAll('"', '').replaceAll("'", '').replaceAll('\n', '').trim();
@@ -43,18 +44,17 @@ class _FlutterwaveScreenState extends State<FlutterwaveScreen> {
   void _setupWebView() {
     final ref = 'ryaniva_${widget.orderId}_${DateTime.now().millisecondsSinceEpoch}';
 
-    // TEMPORARY: hardcoded test email to isolate the bug
-    String safeEmail = 'ryanivatest@gmail.com';
+    // Real customer email
+    String safeEmail = _sanitize(widget.email);
+    if (safeEmail.isEmpty || !safeEmail.contains('@') || !safeEmail.contains('.')) {
+      safeEmail = 'customer@ryaniva.com';
+    }
 
     String safePhone = _sanitize(widget.phone);
-    if (safePhone.isEmpty) {
-      safePhone = '08000000000';
-    }
+    if (safePhone.isEmpty) safePhone = '08000000000';
 
     String safeName = _sanitize(widget.name);
-    if (safeName.isEmpty) {
-      safeName = 'Ryaniva Customer';
-    }
+    if (safeName.isEmpty) safeName = 'Ryaniva Customer';
 
     final htmlContent = '''
 <!DOCTYPE html>
@@ -167,7 +167,8 @@ class _FlutterwaveScreenState extends State<FlutterwaveScreen> {
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (_) => setState(() => _loading = false),
       ))
-      ..loadHtmlString(htmlContent, baseUrl: 'https://ryaniva-backend.onrender.com');
+      ..loadHtmlString(htmlContent,
+          baseUrl: 'https://ryaniva-backend.onrender.com');
   }
 
   @override
