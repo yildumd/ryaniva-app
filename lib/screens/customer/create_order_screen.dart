@@ -269,81 +269,114 @@ void _onPickupChanged(String value) {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text('Payment Method',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _paymentMethod = 'CASH'),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: _paymentMethod == 'CASH'
-                              ? blue.withOpacity(0.1)
-                              : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _paymentMethod == 'CASH' ? blue : Colors.transparent,
-                            width: 2,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(Icons.money,
-                                color: _paymentMethod == 'CASH' ? blue : Colors.grey),
-                            const SizedBox(height: 4),
-                            Text('Cash',
-                                style: TextStyle(
-                                  color: _paymentMethod == 'CASH' ? blue : Colors.grey,
-                                  fontWeight: FontWeight.w600,
-                                )),
-                            const SizedBox(height: 2),
-                            Text('Pay on delivery',
-                                style: TextStyle(color: Colors.grey[400], fontSize: 10)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _paymentMethod = 'CARD'),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: _paymentMethod == 'CARD'
-                              ? orange.withOpacity(0.1)
-                              : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _paymentMethod == 'CARD' ? orange : Colors.transparent,
-                            width: 2,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(Icons.credit_card,
-                                color: _paymentMethod == 'CARD' ? orange : Colors.grey),
-                            const SizedBox(height: 4),
-                            Text('Card / Transfer',
-                                style: TextStyle(
-                                  color: _paymentMethod == 'CARD' ? orange : Colors.grey,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
-                                )),
-                            const SizedBox(height: 2),
-                            Text('Via Flutterwave',
-                                style: TextStyle(color: Colors.grey[400], fontSize: 10)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+const Text('Payment Method',
+    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+const SizedBox(height: 8),
+Row(
+  children: [
+    Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _paymentMethod = 'CASH'),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _paymentMethod == 'CASH'
+                ? blue.withOpacity(0.1) : Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _paymentMethod == 'CASH' ? blue : Colors.transparent,
+              width: 2,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.money,
+                  color: _paymentMethod == 'CASH' ? blue : Colors.grey, size: 24),
+              const SizedBox(height: 4),
+              Text('Cash',
+                  style: TextStyle(
+                    color: _paymentMethod == 'CASH' ? blue : Colors.grey,
+                    fontWeight: FontWeight.w600, fontSize: 12,
+                  )),
+              const SizedBox(height: 2),
+              Text('On delivery',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 9)),
+            ],
+          ),
+        ),
+      ),
+    ),
+    const SizedBox(width: 8),
+    Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _paymentMethod = 'CARD'),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _paymentMethod == 'CARD'
+                ? orange.withOpacity(0.1) : Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _paymentMethod == 'CARD' ? orange : Colors.transparent,
+              width: 2,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.credit_card,
+                  color: _paymentMethod == 'CARD' ? orange : Colors.grey, size: 24),
+              const SizedBox(height: 4),
+              Text('Card',
+                  style: TextStyle(
+                    color: _paymentMethod == 'CARD' ? orange : Colors.grey,
+                    fontWeight: FontWeight.w600, fontSize: 12,
+                  )),
+              const SizedBox(height: 2),
+              Text('Via Flutterwave',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 9)),
+            ],
+          ),
+        ),
+      ),
+    ),
+    const SizedBox(width: 8),
+    Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _paymentMethod = 'CARD'),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _paymentMethod == 'TRANSFER'
+                ? const Color(0xFF10B981).withOpacity(0.1) : Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _paymentMethod == 'TRANSFER'
+                  ? const Color(0xFF10B981) : Colors.transparent,
+              width: 2,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(Icons.account_balance,
+                  color: _paymentMethod == 'TRANSFER'
+                      ? const Color(0xFF10B981) : Colors.grey, size: 24),
+              const SizedBox(height: 4),
+              Text('Transfer',
+                  style: TextStyle(
+                    color: _paymentMethod == 'TRANSFER'
+                        ? const Color(0xFF10B981) : Colors.grey,
+                    fontWeight: FontWeight.w600, fontSize: 12,
+                  )),
+              const SizedBox(height: 2),
+              Text('Bank transfer',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 9)),
+            ],
+          ),
+        ),
+      ),
+    ),
+  ],
+),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
