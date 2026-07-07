@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import 'create_order_screen.dart';
 import 'rate_order_screen.dart';
-import 'dart:async';
+import '../privacy_policy_screen.dart';
+import '../help_support_screen.dart';
+import '../notifications_screen.dart';
+import '../profile_edit_screen.dart';
 
 class CustomerHome extends StatefulWidget {
   const CustomerHome({super.key});
@@ -119,7 +123,8 @@ class _HomeTab extends StatelessWidget {
                         ),
                         IconButton(
                           icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                          onPressed: () {},
+                          onPressed: () => Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => const NotificationsScreen())),
                         ),
                       ],
                     ),
@@ -201,7 +206,7 @@ class _HomeTab extends StatelessWidget {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     TextButton(
                       onPressed: () {},
-                      child: const Text('See all', style: TextStyle(color: blue)),
+                      child: const Text('See all', style: TextStyle(color: Color(0xFF1A3A8F))),
                     ),
                   ],
                 ),
@@ -227,7 +232,7 @@ class _HomeTab extends StatelessWidget {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: orders.orders.take(3).length,
+                  itemCount: orders.orders.length > 3 ? 3 : orders.orders.length,
                   itemBuilder: (context, index) {
                     final order = orders.orders[index];
                     return _OrderCard(order: order, auth: auth, compact: true);
@@ -322,7 +327,8 @@ class _OrderCard extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(context, false),
               child: const Text('No', style: TextStyle(color: Colors.grey))),
           TextButton(onPressed: () => Navigator.pop(context, true),
-              child: const Text('Yes, Cancel', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
+              child: const Text('Yes, Cancel',
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
         ],
       ),
     );
@@ -333,7 +339,9 @@ class _OrderCard extends StatelessWidget {
       final result = await orderProvider.cancelOrder(orderId, token);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message']), backgroundColor: result['success'] ? Colors.green : Colors.red),
+          SnackBar(
+              content: Text(result['message']),
+              backgroundColor: result['success'] ? Colors.green : Colors.red),
         );
         if (result['success']) orderProvider.loadMyOrders(token);
       }
@@ -372,7 +380,10 @@ class _OrderCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(order.status,
-                      style: TextStyle(color: _statusColor(order.status), fontSize: 12, fontWeight: FontWeight.w600)),
+                      style: TextStyle(
+                          color: _statusColor(order.status),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)),
                 ),
               ],
             ),
@@ -380,21 +391,27 @@ class _OrderCard extends StatelessWidget {
             Row(children: [
               const Icon(Icons.radio_button_checked, color: blue, size: 14),
               const SizedBox(width: 6),
-              Expanded(child: Text(order.pickupAddress, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              Expanded(child: Text(order.pickupAddress,
+                  style: const TextStyle(fontSize: 12),
+                  maxLines: 1, overflow: TextOverflow.ellipsis)),
             ]),
             const SizedBox(height: 3),
             Row(children: [
               const Icon(Icons.location_on, color: orange, size: 14),
               const SizedBox(width: 6),
-              Expanded(child: Text(order.dropoffAddress, style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+              Expanded(child: Text(order.dropoffAddress,
+                  style: const TextStyle(fontSize: 12),
+                  maxLines: 1, overflow: TextOverflow.ellipsis)),
             ]),
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('${order.distanceKm} km', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                Text('${order.distanceKm} km',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 12)),
                 Text('₦${order.price.toStringAsFixed(0)}',
-                    style: const TextStyle(color: orange, fontWeight: FontWeight.bold, fontSize: 15)),
+                    style: const TextStyle(
+                        color: orange, fontWeight: FontWeight.bold, fontSize: 15)),
               ],
             ),
             if (!compact) ...[
@@ -425,7 +442,8 @@ class _OrderCard extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => RateOrderScreen(orderId: order.id, token: auth.token))),
+                        MaterialPageRoute(builder: (_) =>
+                            RateOrderScreen(orderId: order.id, token: auth.token))),
                     icon: const Icon(Icons.star_outline, size: 14),
                     label: const Text('Rate & Tip Rider'),
                     style: ElevatedButton.styleFrom(
@@ -461,7 +479,6 @@ class _TrackTabState extends State<_TrackTab> {
   @override
   void initState() {
     super.initState();
-    // Auto refresh every 10 seconds
     _timer = Timer.periodic(const Duration(seconds: 10), (_) {
       widget.orders.loadMyOrders(widget.auth.token);
     });
@@ -502,10 +519,12 @@ class _TrackTabState extends State<_TrackTab> {
                 children: [
                   Icon(Icons.location_searching, size: 80, color: Colors.grey[300]),
                   const SizedBox(height: 16),
-                  Text('No active deliveries', style: TextStyle(fontSize: 18, color: Colors.grey[500])),
+                  Text('No active deliveries',
+                      style: TextStyle(fontSize: 18, color: Colors.grey[500])),
                   const SizedBox(height: 8),
                   Text('Active orders will appear here and update automatically',
-                      style: TextStyle(color: Colors.grey[400]), textAlign: TextAlign.center),
+                      style: TextStyle(color: Colors.grey[400]),
+                      textAlign: TextAlign.center),
                 ],
               ),
             )
@@ -545,7 +564,9 @@ class _TrackTabState extends State<_TrackTab> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+                          ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -554,9 +575,13 @@ class _TrackTabState extends State<_TrackTab> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(order.itemType.toUpperCase(),
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold, fontSize: 14)),
                                 Text('₦${order.price.toStringAsFixed(0)}',
-                                    style: const TextStyle(color: orange, fontWeight: FontWeight.bold, fontSize: 15)),
+                                    style: const TextStyle(
+                                        color: orange,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15)),
                               ],
                             ),
                             const SizedBox(height: 6),
@@ -564,17 +589,18 @@ class _TrackTabState extends State<_TrackTab> {
                               const Icon(Icons.radio_button_checked, color: blue, size: 13),
                               const SizedBox(width: 6),
                               Expanded(child: Text(order.pickupAddress,
-                                  style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                  style: const TextStyle(fontSize: 12),
+                                  maxLines: 1, overflow: TextOverflow.ellipsis)),
                             ]),
                             const SizedBox(height: 3),
                             Row(children: [
                               const Icon(Icons.location_on, color: orange, size: 13),
                               const SizedBox(width: 6),
                               Expanded(child: Text(order.dropoffAddress,
-                                  style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                  style: const TextStyle(fontSize: 12),
+                                  maxLines: 1, overflow: TextOverflow.ellipsis)),
                             ]),
                             const SizedBox(height: 20),
-                            // Progress tracker
                             Row(
                               children: List.generate(4, (i) {
                                 final isActive = i <= currentStep;
@@ -594,11 +620,9 @@ class _TrackTabState extends State<_TrackTab> {
                                                     ? Border.all(color: orange, width: 2)
                                                     : null,
                                               ),
-                                              child: Icon(
-                                                stepIcons[i],
-                                                color: isActive ? Colors.white : Colors.grey[400],
-                                                size: 15,
-                                              ),
+                                              child: Icon(stepIcons[i],
+                                                  color: isActive ? Colors.white : Colors.grey[400],
+                                                  size: 15),
                                             ),
                                             const SizedBox(height: 4),
                                             Text(stepLabels[i],
@@ -606,15 +630,16 @@ class _TrackTabState extends State<_TrackTab> {
                                                 style: TextStyle(
                                                   fontSize: 9,
                                                   color: isActive ? blue : Colors.grey[400],
-                                                  fontWeight: i == currentStep ? FontWeight.bold : FontWeight.normal,
+                                                  fontWeight: i == currentStep
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
                                                 )),
                                           ],
                                         ),
                                       ),
                                       if (!isLast)
                                         Container(
-                                          height: 2,
-                                          width: 20,
+                                          height: 2, width: 20,
                                           margin: const EdgeInsets.only(bottom: 20),
                                           color: i < currentStep ? blue : Colors.grey[200],
                                         ),
@@ -635,11 +660,13 @@ class _TrackTabState extends State<_TrackTab> {
                                   children: [
                                     const Icon(Icons.motorcycle, color: blue, size: 16),
                                     const SizedBox(width: 8),
-                                    Text(
-                                      order.status == 'ACCEPTED'
-                                          ? 'Rider is heading to pickup location'
-                                          : 'Rider has picked up your item and is on the way',
-                                      style: const TextStyle(fontSize: 12, color: blue),
+                                    Expanded(
+                                      child: Text(
+                                        order.status == 'ACCEPTED'
+                                            ? 'Rider is heading to pickup location'
+                                            : 'Rider has picked up your item and is on the way',
+                                        style: const TextStyle(fontSize: 12, color: blue),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -687,21 +714,33 @@ class _WalletTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Wallet Balance', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  const Text('Wallet Balance',
+                      style: TextStyle(color: Colors.white70, fontSize: 14)),
                   const SizedBox(height: 8),
-                  const Text('₦0.00', style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
+                  const Text('₦0.00',
+                      style: TextStyle(
+                          color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 20),
                   Row(
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {},
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                              ),
+                              builder: (_) => const _TopUpSheet(),
+                            );
+                          },
                           icon: const Icon(Icons.add, size: 16),
                           label: const Text('Top Up'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: orange,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
                           ),
                         ),
                       ),
@@ -714,7 +753,8 @@ class _WalletTab extends StatelessWidget {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
                             side: BorderSide(color: Colors.white.withOpacity(0.5)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
                           ),
                         ),
                       ),
@@ -726,18 +766,21 @@ class _WalletTab extends StatelessWidget {
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(16)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Recent Transactions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const Text('Recent Transactions',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   const SizedBox(height: 16),
                   Center(
                     child: Column(
                       children: [
                         Icon(Icons.receipt_outlined, size: 48, color: Colors.grey[300]),
                         const SizedBox(height: 8),
-                        Text('No transactions yet', style: TextStyle(color: Colors.grey[400])),
+                        Text('No transactions yet',
+                            style: TextStyle(color: Colors.grey[400])),
                       ],
                     ),
                   ),
@@ -746,6 +789,118 @@ class _WalletTab extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── TOP UP SHEET ──
+class _TopUpSheet extends StatefulWidget {
+  const _TopUpSheet();
+
+  @override
+  State<_TopUpSheet> createState() => _TopUpSheetState();
+}
+
+class _TopUpSheetState extends State<_TopUpSheet> {
+  final _amountController = TextEditingController();
+  final List<int> _quickAmounts = [500, 1000, 2000, 5000];
+
+  @override
+  Widget build(BuildContext context) {
+    const blue = Color(0xFF1A3A8F);
+    const orange = Color(0xFFE85C1A);
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24, right: 24, top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Top Up Wallet',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text('Select or enter amount',
+              style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+          const SizedBox(height: 20),
+          Row(
+            children: _quickAmounts.map((amount) {
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() =>
+                      _amountController.text = amount.toString()),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _amountController.text == amount.toString()
+                          ? blue.withOpacity(0.1) : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _amountController.text == amount.toString()
+                            ? blue : Colors.transparent,
+                      ),
+                    ),
+                    child: Text('₦$amount',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: _amountController.text == amount.toString()
+                              ? blue : Colors.grey[700],
+                        )),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _amountController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: 'Or enter custom amount',
+              prefixText: '₦ ',
+              prefixStyle: const TextStyle(fontWeight: FontWeight.w600),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: blue, width: 2),
+              ),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _amountController.text.isEmpty ? null : () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Wallet top-up coming soon via Flutterwave!'),
+                    backgroundColor: Color(0xFF1A3A8F),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: orange,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text(
+                _amountController.text.isEmpty
+                    ? 'Enter Amount'
+                    : 'Top Up ₦${_amountController.text}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -774,16 +929,19 @@ class _ProfileTab extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
                   Container(
                     width: 80, height: 80,
-                    decoration: BoxDecoration(color: blue.withOpacity(0.1), shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                        color: blue.withOpacity(0.1), shape: BoxShape.circle),
                     child: Center(
                       child: Text(
                         auth.user?.name?.substring(0, 1).toUpperCase() ?? 'U',
-                        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: blue),
+                        style: const TextStyle(
+                            fontSize: 32, fontWeight: FontWeight.bold, color: blue),
                       ),
                     ),
                   ),
@@ -796,24 +954,41 @@ class _ProfileTab extends StatelessWidget {
                   const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(color: blue.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-                    child: const Text('Customer', style: TextStyle(color: blue, fontSize: 12, fontWeight: FontWeight.w600)),
+                    decoration: BoxDecoration(
+                        color: blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20)),
+                    child: const Text('Customer',
+                        style: TextStyle(
+                            color: blue, fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
             Container(
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
-                  _profileItem(Icons.person_outline, 'Edit Profile', blue, () {}),
+                  _profileItem(Icons.person_outline, 'Edit Profile', blue, () {
+                    Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => const ProfileEditScreen()));
+                  }),
                   _divider(),
-                  _profileItem(Icons.notifications_outlined, 'Notifications', blue, () {}),
+                  _profileItem(Icons.notifications_outlined, 'Notifications', blue, () {
+                    Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen()));
+                  }),
                   _divider(),
-                  _profileItem(Icons.help_outline, 'Help & Support', blue, () {}),
+                  _profileItem(Icons.help_outline, 'Help & Support', blue, () {
+                    Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => const HelpSupportScreen()));
+                  }),
                   _divider(),
-                  _profileItem(Icons.privacy_tip_outlined, 'Privacy Policy', blue, () {}),
+                  _profileItem(Icons.privacy_tip_outlined, 'Privacy Policy', blue, () {
+                    Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => const PrivacyPolicyScreen()));
+                  }),
                   _divider(),
                   _profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
                 ],
@@ -828,8 +1003,13 @@ class _ProfileTab extends StatelessWidget {
   Widget _profileItem(IconData icon, String label, Color color, VoidCallback onTap) {
     return ListTile(
       leading: Icon(icon, color: color, size: 22),
-      title: Text(label, style: TextStyle(fontSize: 14, color: color == Colors.red ? Colors.red : Colors.black87)),
-      trailing: color != Colors.red ? const Icon(Icons.chevron_right, color: Colors.grey, size: 18) : null,
+      title: Text(label,
+          style: TextStyle(
+              fontSize: 14,
+              color: color == Colors.red ? Colors.red : Colors.black87)),
+      trailing: color != Colors.red
+          ? const Icon(Icons.chevron_right, color: Colors.grey, size: 18)
+          : null,
       onTap: onTap,
     );
   }

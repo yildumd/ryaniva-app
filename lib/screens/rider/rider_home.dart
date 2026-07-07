@@ -4,6 +4,10 @@ import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../services/api_service.dart';
 import '../../models/order.dart';
+import '../profile_edit_screen.dart';
+import '../notifications_screen.dart';
+import '../help_support_screen.dart';
+import '../privacy_policy_screen.dart';
 
 class RiderHome extends StatefulWidget {
   const RiderHome({super.key});
@@ -652,13 +656,27 @@ class _RiderHomeState extends State<RiderHome> {
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
               child: Column(
                 children: [
-                  _profileItem(Icons.notifications_outlined, 'Notifications', blue, () {}),
-                  _divider(),
-                  _profileItem(Icons.help_outline, 'Help & Support', blue, () {}),
-                  _divider(),
-                  _profileItem(Icons.star_outline, 'My Reviews', blue, () {}),
-                  _divider(),
-                  _profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
+                  _profileItem(Icons.person_outline, 'Edit Profile', blue, () {
+  Navigator.push(context, MaterialPageRoute(
+    builder: (_) => const ProfileEditScreen()));
+}),
+_divider(),
+_profileItem(Icons.notifications_outlined, 'Notifications', blue, () {
+  Navigator.push(context, MaterialPageRoute(
+    builder: (_) => const NotificationsScreen()));
+}),
+_divider(),
+_profileItem(Icons.help_outline, 'Help & Support', blue, () {
+  Navigator.push(context, MaterialPageRoute(
+    builder: (_) => const HelpSupportScreen()));
+}),
+_divider(),
+_profileItem(Icons.privacy_tip_outlined, 'Privacy Policy', blue, () {
+  Navigator.push(context, MaterialPageRoute(
+    builder: (_) => const PrivacyPolicyScreen()));
+}),
+_divider(),
+_profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
                 ],
               ),
             ),

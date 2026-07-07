@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../payment/flutterwave_screen.dart';
+import '../../services/location_storage.dart';
 
 class CreateOrderScreen extends StatefulWidget {
   final String? preselectedType;
@@ -34,6 +35,39 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   Timer? _dropoffDebounce;
 
   static const String _josViewbox = '8.6,9.7,9.1,10.1';
+List<Map<String, dynamic>> _savedLocations = [];
+Map<String, double> _getJosCoordinates(String address) {
+  final a = address.toLowerCase();
+
+  if (a.contains('rayfield')) return {'lat': 9.8734, 'lng': 8.9012};
+  if (a.contains('terminus')) return {'lat': 9.8965, 'lng': 8.8583};
+  if (a.contains('bukuru')) return {'lat': 9.7934, 'lng': 8.8521};
+  if (a.contains('juth') || a.contains('teaching hospital')) return {'lat': 9.9012, 'lng': 8.8734};
+  if (a.contains('unijos') || a.contains('university of jos')) return {'lat': 9.9285, 'lng': 8.8921};
+  if (a.contains('angwan rogo')) return {'lat': 9.9123, 'lng': 8.8456};
+  if (a.contains('tudun wada')) return {'lat': 9.9234, 'lng': 8.8678};
+  if (a.contains('nassarawa')) return {'lat': 9.8823, 'lng': 8.8934};
+  if (a.contains('vom')) return {'lat': 9.7234, 'lng': 8.8123};
+  if (a.contains('barkin ladi')) return {'lat': 9.5234, 'lng': 8.9012};
+  if (a.contains('farin gada')) return {'lat': 9.9345, 'lng': 8.8234};
+  if (a.contains('apata')) return {'lat': 9.8456, 'lng': 8.8345};
+  if (a.contains('gwong')) return {'lat': 9.9012, 'lng': 8.8567};
+  if (a.contains('kabong')) return {'lat': 9.8678, 'lng': 8.8789};
+  if (a.contains('dadin kowa')) return {'lat': 9.8234, 'lng': 8.8456};
+  if (a.contains('anglo')) return {'lat': 9.8567, 'lng': 8.8678};
+  if (a.contains('zaria road')) return {'lat': 9.9456, 'lng': 8.8345};
+  if (a.contains('bauchi road')) return {'lat': 9.9567, 'lng': 8.8901};
+  if (a.contains('rukuba')) return {'lat': 9.9123, 'lng': 8.8234};
+  if (a.contains('lamingo')) return {'lat': 9.9234, 'lng': 8.9123};
+  if (a.contains('rikkos')) return {'lat': 9.8901, 'lng': 8.8456};
+  if (a.contains('kwararafa')) return {'lat': 9.8789, 'lng': 8.8567};
+  if (a.contains('tafawa balewa')) return {'lat': 9.8678, 'lng': 8.8456};
+  if (a.contains('plateau hospital')) return {'lat': 9.8901, 'lng': 8.8678};
+  if (a.contains('airport')) return {'lat': 9.8678, 'lng': 8.9234};
+
+  // Default Jos center
+  return {'lat': 9.8965, 'lng': 8.8583};
+}
 
   @override
   void initState() {
@@ -41,20 +75,32 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     if (widget.preselectedType != null) {
       _itemTypeController.text = widget.preselectedType!;
     }
+    _loadSavedLocations();
   }
+
+  Future<void> _loadSavedLocations() async {
+    final locations = await LocationStorage.getSavedLocations();
+    setState(() {
+      _savedLocations = locations.map((l) => {
+        'display_name': l.address,
+        'lat': l.lat,
+        'lon': l.lng,
+        'name': l.name,
+      }).toList();
+    });
+  }
+
   Future<List<Map<String, dynamic>>> _searchAddress(String query) async {
     if (query.trim().length < 3) return [];
     try {
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/search'
-        '?q=${Uri.encodeComponent(query)}'
-        '&format=json'
-        '&addressdetails=1'
-        '&limit=5'
-        '&countrycodes=ng'
-        '&viewbox=$_josViewbox'
-        '&bounded=0',
-      );
+final url = Uri.parse(
+  'https://nominatim.openstreetmap.org/search'
+  '?q=${Uri.encodeComponent(query + ' Jos Nigeria')}'
+  '&format=json'
+  '&addressdetails=1'
+  '&limit=8'
+  '&countrycodes=ng',
+);
       final res = await http.get(url, headers: {
         'User-Agent': 'RyanivaApp/1.0 (contact@ryaniva.com)',
       });
@@ -106,22 +152,36 @@ void _onPickupChanged(String value) {
     });
   }
 
-  void _selectPickup(Map<String, dynamic> suggestion) {
+  void _selectPickup(Map<String, dynamic> suggestion) async {
     setState(() {
       _pickupController.text = suggestion['display_name'];
       _pickupLat = suggestion['lat'];
       _pickupLng = suggestion['lon'];
       _showPickupSuggestions = false;
     });
+    await LocationStorage.saveLocation(SavedLocation(
+      name: suggestion['display_name'].toString().split(',')[0],
+      address: suggestion['display_name'],
+      lat: suggestion['lat'],
+      lng: suggestion['lon'],
+    ));
+    _loadSavedLocations();
   }
 
-  void _selectDropoff(Map<String, dynamic> suggestion) {
+  void _selectDropoff(Map<String, dynamic> suggestion) async {
     setState(() {
       _dropoffController.text = suggestion['display_name'];
       _dropoffLat = suggestion['lat'];
       _dropoffLng = suggestion['lon'];
       _showDropoffSuggestions = false;
     });
+    await LocationStorage.saveLocation(SavedLocation(
+      name: suggestion['display_name'].toString().split(',')[0],
+      address: suggestion['display_name'],
+      lat: suggestion['lat'],
+      lng: suggestion['lon'],
+    ));
+    _loadSavedLocations();
   }
 
   @override
@@ -201,8 +261,8 @@ void _onPickupChanged(String value) {
                   hintText: 'Start typing e.g. Terminus, Bukuru, Rayfield...',
                   prefixIcon: const Icon(Icons.radio_button_checked, color: blue),
                   suffixIcon: _pickupLat != null
-                      ? const Icon(Icons.check_circle, color: Colors.green, size: 18)
-                      : null,
+    ? const Icon(Icons.check_circle, color: Colors.green, size: 18)
+    : const Icon(Icons.edit_location_outlined, color: Colors.grey, size: 18),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -395,14 +455,17 @@ Row(
                             return;
                           }
 
-                          if (_pickupLat == null || _dropoffLat == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text(
-                                      'Please select a location from the suggestions list')),
-                            );
-                            return;
-                          }
+                          // Use landmark coordinates based on typed address
+if (_pickupLat == null) {
+  final coords = _getJosCoordinates(_pickupController.text);
+  _pickupLat = coords['lat'];
+  _pickupLng = coords['lng'];
+}
+if (_dropoffLat == null) {
+  final coords = _getJosCoordinates(_dropoffController.text);
+  _dropoffLat = coords['lat'];
+  _dropoffLng = coords['lng'];
+}
 
                           final result = await orders.createOrder(
                             token: auth.token,
