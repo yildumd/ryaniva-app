@@ -9,6 +9,8 @@ import '../privacy_policy_screen.dart';
 import '../help_support_screen.dart';
 import '../notifications_screen.dart';
 import '../profile_edit_screen.dart';
+import '../payment/flutterwave_screen.dart';
+import '../../services/api_service.dart';
 
 class CustomerHome extends StatefulWidget {
   const CustomerHome({super.key});
@@ -40,7 +42,7 @@ class _CustomerHomeState extends State<CustomerHome> {
       _HomeTab(auth: auth, orders: orders),
       _OrdersTab(auth: auth, orders: orders),
       _TrackTab(orders: orders, auth: auth),
-      _WalletTab(),
+      _WalletTab(auth: auth),
       _ProfileTab(auth: auth),
     ];
 
@@ -685,7 +687,36 @@ class _TrackTabState extends State<_TrackTab> {
 }
 
 // ── WALLET TAB ──
-class _WalletTab extends StatelessWidget {
+class _WalletTab extends StatefulWidget {
+  final dynamic auth;
+  const _WalletTab({required this.auth});
+
+  @override
+  State<_WalletTab> createState() => _WalletTabState();
+}
+
+class _WalletTabState extends State<_WalletTab> {
+  double _balance = 0.0;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBalance();
+  }
+
+  Future<void> _loadBalance() async {
+    try {
+      final res = await ApiService.get('/wallet', token: widget.auth.token);
+      setState(() {
+        _balance = (res['balance'] as num).toDouble();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const blue = Color(0xFF1A3A8F);
@@ -697,6 +728,12 @@ class _WalletTab extends StatelessWidget {
         backgroundColor: blue,
         foregroundColor: Colors.white,
         title: const Text('My Wallet', style: TextStyle(fontWeight: FontWeight.bold)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadBalance,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -717,21 +754,30 @@ class _WalletTab extends StatelessWidget {
                   const Text('Wallet Balance',
                       style: TextStyle(color: Colors.white70, fontSize: 14)),
                   const SizedBox(height: 8),
-                  const Text('₦0.00',
-                      style: TextStyle(
-                          color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold)),
+                  _loading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text('₦${_balance.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold)),
                   const SizedBox(height: 20),
                   Row(
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            showModalBottomSheet(
+                          onPressed: () async {
+                            await showModalBottomSheet(
                               context: context,
                               shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                borderRadius:
+                                    BorderRadius.vertical(top: Radius.circular(20)),
                               ),
-                              builder: (_) => const _TopUpSheet(),
+                              isScrollControlled: true,
+                              builder: (_) => _TopUpSheet(
+                                auth: widget.auth,
+                                onSuccess: _loadBalance,
+                              ),
                             );
                           },
                           icon: const Icon(Icons.add, size: 16),
@@ -747,9 +793,9 @@ class _WalletTab extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () {},
+                          onPressed: _loadBalance,
                           icon: const Icon(Icons.history, size: 16),
-                          label: const Text('History'),
+                          label: const Text('Refresh'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
                             side: BorderSide(color: Colors.white.withOpacity(0.5)),
@@ -789,118 +835,6 @@ class _WalletTab extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ── TOP UP SHEET ──
-class _TopUpSheet extends StatefulWidget {
-  const _TopUpSheet();
-
-  @override
-  State<_TopUpSheet> createState() => _TopUpSheetState();
-}
-
-class _TopUpSheetState extends State<_TopUpSheet> {
-  final _amountController = TextEditingController();
-  final List<int> _quickAmounts = [500, 1000, 2000, 5000];
-
-  @override
-  Widget build(BuildContext context) {
-    const blue = Color(0xFF1A3A8F);
-    const orange = Color(0xFFE85C1A);
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24, right: 24, top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Top Up Wallet',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          Text('Select or enter amount',
-              style: TextStyle(color: Colors.grey[500], fontSize: 13)),
-          const SizedBox(height: 20),
-          Row(
-            children: _quickAmounts.map((amount) {
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() =>
-                      _amountController.text = amount.toString()),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: _amountController.text == amount.toString()
-                          ? blue.withOpacity(0.1) : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: _amountController.text == amount.toString()
-                            ? blue : Colors.transparent,
-                      ),
-                    ),
-                    child: Text('₦$amount',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                          color: _amountController.text == amount.toString()
-                              ? blue : Colors.grey[700],
-                        )),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _amountController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              hintText: 'Or enter custom amount',
-              prefixText: '₦ ',
-              prefixStyle: const TextStyle(fontWeight: FontWeight.w600),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: blue, width: 2),
-              ),
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _amountController.text.isEmpty ? null : () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Wallet top-up coming soon via Flutterwave!'),
-                    backgroundColor: Color(0xFF1A3A8F),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: orange,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: Text(
-                _amountController.text.isEmpty
-                    ? 'Enter Amount'
-                    : 'Top Up ₦${_amountController.text}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1015,4 +949,180 @@ class _ProfileTab extends StatelessWidget {
   }
 
   Widget _divider() => const Divider(height: 1, indent: 56);
+}
+// ── TOP UP SHEET ──
+class _TopUpSheet extends StatefulWidget {
+  final dynamic auth;
+  final VoidCallback onSuccess;
+  const _TopUpSheet({required this.auth, required this.onSuccess});
+
+  @override
+  State<_TopUpSheet> createState() => _TopUpSheetState();
+}
+
+class _TopUpSheetState extends State<_TopUpSheet> {
+  final _amountController = TextEditingController();
+  final List<int> _quickAmounts = [500, 1000, 2000, 5000];
+  bool _loading = false;
+
+  Future<void> _processTopUp() async {
+    final amount = double.tryParse(_amountController.text);
+    if (amount == null || amount <= 0) return;
+
+    setState(() => _loading = true);
+    Navigator.pop(context);
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FlutterwaveScreen(
+          email: widget.auth.user?.phone != null
+              ? '${widget.auth.user!.phone}@ryaniva.com'
+              : 'customer@ryaniva.com',
+          phone: widget.auth.user?.phone ?? '',
+          name: widget.auth.user?.name ?? 'Ryaniva Customer',
+          amount: amount,
+          orderId: 'wallet_${DateTime.now().millisecondsSinceEpoch}',
+          paymentOption: 'card',
+          onPaymentComplete: (success) async {
+            if (success) {
+              try {
+                await ApiService.post('/wallet/topup', {
+                  'amount': amount,
+                  'reference': 'wallet_${DateTime.now().millisecondsSinceEpoch}',
+                }, token: widget.auth.token);
+                widget.onSuccess();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('₦${amount.toStringAsFixed(0)} added to wallet!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Payment received but wallet update failed. Contact support.')),
+                  );
+                }
+              }
+            }
+          },
+        ),
+      ),
+    );
+    setState(() => _loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const blue = Color(0xFF1A3A8F);
+    const orange = Color(0xFFE85C1A);
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 24, right: 24, top: 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Top Up Wallet',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text('Select or enter amount to add to your wallet',
+              style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+          const SizedBox(height: 20),
+          Row(
+            children: _quickAmounts.map((amount) {
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() =>
+                      _amountController.text = amount.toString()),
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _amountController.text == amount.toString()
+                          ? blue.withOpacity(0.1)
+                          : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _amountController.text == amount.toString()
+                            ? blue
+                            : Colors.transparent,
+                      ),
+                    ),
+                    child: Text('₦$amount',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: _amountController.text == amount.toString()
+                              ? blue
+                              : Colors.grey[700],
+                        )),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _amountController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: 'Or enter custom amount',
+              prefixText: '₦ ',
+              prefixStyle: const TextStyle(fontWeight: FontWeight.w600),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: blue, width: 2),
+              ),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: _amountController.text.isEmpty || _loading
+                  ? null
+                  : _processTopUp,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: orange,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: _loading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : Text(
+                      _amountController.text.isEmpty
+                          ? 'Enter Amount'
+                          : 'Top Up ₦${_amountController.text} via Flutterwave',
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600)),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.security, size: 14, color: Colors.grey[400]),
+                const SizedBox(width: 4),
+                Text('Secured by Flutterwave',
+                    style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
