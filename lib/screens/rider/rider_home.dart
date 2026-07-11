@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../services/api_service.dart';
@@ -23,9 +24,7 @@ class _RiderHomeState extends State<RiderHome> {
   Map<String, dynamic>? _riderProfile;
   String _selectedBike = 'Motorcycle';
   List<Order> _activeOrders = [];
-  List<Order> _completedOrders = [];
   int _currentIndex = 0;
-
   final List<String> _bikeTypes = ['Motorcycle', 'Scooter', 'Bicycle'];
 
   @override
@@ -118,12 +117,23 @@ class _RiderHomeState extends State<RiderHome> {
       final res = await ApiService.patch('/orders/$orderId/status', {'status': status}, token: token);
       if (res['message'] != null && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'])));
-        // Refresh everything
         await _loadActiveOrders();
         await _loadOrders();
-        await _loadProfile(); // This updates earnings, rating, trips
+        await _loadProfile();
       }
     } catch (e) {}
+  }
+
+  Future<void> _openGoogleMaps(double lat, double lng, String label) async {
+    final url = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+    );
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      final geoUrl = Uri.parse('geo:$lat,$lng?q=$lat,$lng($label)');
+      await launchUrl(geoUrl, mode: LaunchMode.externalApplication);
+    }
   }
 
   @override
@@ -141,7 +151,7 @@ class _RiderHomeState extends State<RiderHome> {
 
     final pages = [
       _buildHomeTab(context, auth),
-      _buildOrdersTab(context, auth),
+      _buildOrdersTab(context),
       _buildEarningsTab(),
       _buildWalletTab(),
       _buildProfileTab(context, auth),
@@ -179,13 +189,10 @@ class _RiderHomeState extends State<RiderHome> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF1A3A8F), Color(0xFF0D2260)],
-                ),
+                gradient: LinearGradient(colors: [Color(0xFF1A3A8F), Color(0xFF0D2260)]),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(28),
                   bottomRight: Radius.circular(28),
@@ -213,17 +220,19 @@ class _RiderHomeState extends State<RiderHome> {
                       ),
                       Row(
                         children: [
-                          IconButton(icon: const Icon(Icons.refresh, color: Colors.white), onPressed: () {
-                            _loadOrders();
-                            _loadActiveOrders();
-                          }),
-                          IconButton(icon: const Icon(Icons.logout, color: Colors.white), onPressed: () => auth.logout()),
+                          IconButton(
+                            icon: const Icon(Icons.refresh, color: Colors.white),
+                            onPressed: () { _loadOrders(); _loadActiveOrders(); },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.logout, color: Colors.white),
+                            onPressed: () => auth.logout(),
+                          ),
                         ],
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Online toggle
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -263,8 +272,6 @@ class _RiderHomeState extends State<RiderHome> {
                 ],
               ),
             ),
-
-            // Stats row
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -277,8 +284,6 @@ class _RiderHomeState extends State<RiderHome> {
                 ],
               ),
             ),
-
-            // Available orders
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -295,7 +300,6 @@ class _RiderHomeState extends State<RiderHome> {
                 ],
               ),
             ),
-
             Expanded(
               child: !_isOnline
                   ? Center(
@@ -363,7 +367,7 @@ class _RiderHomeState extends State<RiderHome> {
     );
   }
 
-  Widget _buildOrdersTab(BuildContext context, dynamic auth) {
+  Widget _buildOrdersTab(BuildContext context) {
     const blue = Color(0xFF1A3A8F);
     const orange = Color(0xFFE85C1A);
 
@@ -418,7 +422,6 @@ class _RiderHomeState extends State<RiderHome> {
   Widget _buildEarningsTab() {
     const blue = Color(0xFF1A3A8F);
     const orange = Color(0xFFE85C1A);
-
     final totalTrips = _riderProfile?['totalTrips'] ?? 0;
     final rating = _riderProfile?['rating'] ?? 5.0;
     final totalTips = _riderProfile?['totalTips'] ?? 0.0;
@@ -435,7 +438,6 @@ class _RiderHomeState extends State<RiderHome> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Salary banner
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -448,7 +450,8 @@ class _RiderHomeState extends State<RiderHome> {
                 children: [
                   const Text('Monthly Salary', style: TextStyle(color: Colors.white70, fontSize: 13)),
                   const SizedBox(height: 4),
-                  const Text('Paid by Ryaniva', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Text('Paid by Ryaniva',
+                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -462,10 +465,7 @@ class _RiderHomeState extends State<RiderHome> {
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Stats grid
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -477,10 +477,10 @@ class _RiderHomeState extends State<RiderHome> {
                 _earningsCard('$totalTrips', 'Completed Trips', Icons.check_circle, Colors.green),
                 _earningsCard('$rating ⭐', 'My Rating', Icons.star, Colors.amber),
                 _earningsCard('₦${totalTips.toStringAsFixed(0)}', 'Total Tips', Icons.volunteer_activism, orange),
-                _earningsCard(bonusEligible ? 'Eligible ✅' : 'Not Yet', 'Bonus Status', Icons.emoji_events, bonusEligible ? Colors.green : Colors.grey),
+                _earningsCard(bonusEligible ? 'Eligible ✅' : 'Not Yet',
+                    'Bonus Status', Icons.emoji_events, bonusEligible ? Colors.green : Colors.grey),
               ],
             ),
-
             if (bonusEligible) ...[
               const SizedBox(height: 16),
               Container(
@@ -510,18 +510,15 @@ class _RiderHomeState extends State<RiderHome> {
                 ),
               ),
             ],
-
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-              ),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('How Bonuses Work', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const Text('How Bonuses Work',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   const SizedBox(height: 12),
                   _bonusRule('⭐', 'Maintain a 4.5+ star rating'),
                   _bonusRule('🏍️', 'Complete 20+ deliveries'),
@@ -538,7 +535,6 @@ class _RiderHomeState extends State<RiderHome> {
 
   Widget _buildWalletTab() {
     const blue = Color(0xFF1A3A8F);
-    const orange = Color(0xFFE85C1A);
     final totalTips = _riderProfile?['totalTips'] ?? 0.0;
 
     return Scaffold(
@@ -636,8 +632,10 @@ class _RiderHomeState extends State<RiderHome> {
                   const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(color: blue.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-                    child: const Text('Ryaniva Rider', style: TextStyle(color: blue, fontSize: 12, fontWeight: FontWeight.w600)),
+                    decoration: BoxDecoration(
+                        color: blue.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                    child: const Text('Ryaniva Rider',
+                        style: TextStyle(color: blue, fontSize: 12, fontWeight: FontWeight.w600)),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -657,26 +655,22 @@ class _RiderHomeState extends State<RiderHome> {
               child: Column(
                 children: [
                   _profileItem(Icons.person_outline, 'Edit Profile', blue, () {
-  Navigator.push(context, MaterialPageRoute(
-    builder: (_) => const ProfileEditScreen()));
-}),
-_divider(),
-_profileItem(Icons.notifications_outlined, 'Notifications', blue, () {
-  Navigator.push(context, MaterialPageRoute(
-    builder: (_) => const NotificationsScreen()));
-}),
-_divider(),
-_profileItem(Icons.help_outline, 'Help & Support', blue, () {
-  Navigator.push(context, MaterialPageRoute(
-    builder: (_) => const HelpSupportScreen()));
-}),
-_divider(),
-_profileItem(Icons.privacy_tip_outlined, 'Privacy Policy', blue, () {
-  Navigator.push(context, MaterialPageRoute(
-    builder: (_) => const PrivacyPolicyScreen()));
-}),
-_divider(),
-_profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileEditScreen()));
+                  }),
+                  _divider(),
+                  _profileItem(Icons.notifications_outlined, 'Notifications', blue, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+                  }),
+                  _divider(),
+                  _profileItem(Icons.help_outline, 'Help & Support', blue, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen()));
+                  }),
+                  _divider(),
+                  _profileItem(Icons.privacy_tip_outlined, 'Privacy Policy', blue, () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()));
+                  }),
+                  _divider(),
+                  _profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
                 ],
               ),
             ),
@@ -753,7 +747,8 @@ _profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
   Widget _profileStat(String value, String label) {
     return Column(
       children: [
-        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A3A8F))),
+        Text(value,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A3A8F))),
         Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
       ],
     );
@@ -762,7 +757,8 @@ _profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
   Widget _profileItem(IconData icon, String label, Color color, VoidCallback onTap) {
     return ListTile(
       leading: Icon(icon, color: color, size: 22),
-      title: Text(label, style: TextStyle(fontSize: 14, color: color == Colors.red ? Colors.red : Colors.black87)),
+      title: Text(label,
+          style: TextStyle(fontSize: 14, color: color == Colors.red ? Colors.red : Colors.black87)),
       trailing: color != Colors.red ? const Icon(Icons.chevron_right, color: Colors.grey, size: 18) : null,
       onTap: onTap,
     );
@@ -803,7 +799,9 @@ _profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: order.status == 'PICKED' ? orange.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                  color: order.status == 'PICKED'
+                      ? orange.withOpacity(0.1)
+                      : Colors.orange.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(order.status,
@@ -837,6 +835,46 @@ _profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
                 action,
               ],
             ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openGoogleMaps(
+                      order.pickupLat,
+                      order.pickupLng,
+                      'Pickup: ${order.pickupAddress}',
+                    ),
+                    icon: const Icon(Icons.navigation_outlined, size: 14),
+                    label: const Text('Navigate to Pickup', style: TextStyle(fontSize: 11)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: blue,
+                      side: BorderSide(color: blue),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openGoogleMaps(
+                      order.dropoffLat,
+                      order.dropoffLng,
+                      'Dropoff: ${order.dropoffAddress}',
+                    ),
+                    icon: const Icon(Icons.location_on_outlined, size: 14),
+                    label: const Text('Navigate to Dropoff', style: TextStyle(fontSize: 11)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: orange,
+                      side: BorderSide(color: orange),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -867,7 +905,8 @@ _profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
               Text('Select your bike type to start delivering',
                   style: TextStyle(color: Colors.grey[600]), textAlign: TextAlign.center),
               const SizedBox(height: 40),
-              const Align(alignment: Alignment.centerLeft,
+              const Align(
+                  alignment: Alignment.centerLeft,
                   child: Text('Bike Type', style: TextStyle(fontWeight: FontWeight.w600))),
               const SizedBox(height: 8),
               Column(
@@ -881,15 +920,20 @@ _profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
                       decoration: BoxDecoration(
                         color: isSelected ? blue.withOpacity(0.08) : Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isSelected ? blue : Colors.grey[300]!, width: isSelected ? 2 : 1),
+                        border: Border.all(
+                            color: isSelected ? blue : Colors.grey[300]!,
+                            width: isSelected ? 2 : 1),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.motorcycle, color: isSelected ? blue : Colors.grey[400]),
+                          Icon(Icons.motorcycle,
+                              color: isSelected ? blue : Colors.grey[400]),
                           const SizedBox(width: 12),
-                          Text(bike, style: TextStyle(
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                            color: isSelected ? blue : Colors.black87, fontSize: 15)),
+                          Text(bike,
+                              style: TextStyle(
+                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                  color: isSelected ? blue : Colors.black87,
+                                  fontSize: 15)),
                           const Spacer(),
                           if (isSelected) Icon(Icons.check_circle, color: orange, size: 20),
                         ],
@@ -928,7 +972,8 @@ _profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
             children: [
               Container(
                 width: 80, height: 80,
-                decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1), shape: BoxShape.circle),
                 child: const Icon(Icons.hourglass_empty, size: 40, color: Colors.orange),
               ),
               const SizedBox(height: 24),
@@ -942,7 +987,8 @@ _profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
                 onPressed: _loadProfile,
                 icon: const Icon(Icons.refresh),
                 label: const Text('Check Status'),
-                style: OutlinedButton.styleFrom(foregroundColor: blue, side: BorderSide(color: blue)),
+                style: OutlinedButton.styleFrom(
+                    foregroundColor: blue, side: BorderSide(color: blue)),
               ),
             ],
           ),
@@ -961,11 +1007,13 @@ _profileItem(Icons.logout, 'Logout', Colors.red, () => auth.logout()),
             children: [
               Container(
                 width: 80, height: 80,
-                decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1), shape: BoxShape.circle),
                 child: const Icon(Icons.block, size: 40, color: Colors.red),
               ),
               const SizedBox(height: 24),
-              const Text('Account Suspended', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const Text('Account Suspended',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Text('Please contact Ryaniva support.',
                   style: TextStyle(color: Colors.grey[600]), textAlign: TextAlign.center),

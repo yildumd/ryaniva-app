@@ -7,6 +7,7 @@ class FlutterwaveScreen extends StatefulWidget {
   final String name;
   final double amount;
   final String orderId;
+  final String paymentOption;
   final Function(bool success) onPaymentComplete;
 
   const FlutterwaveScreen({
@@ -17,6 +18,7 @@ class FlutterwaveScreen extends StatefulWidget {
     required this.amount,
     required this.orderId,
     required this.onPaymentComplete,
+    this.paymentOption = 'card',
   });
 
   @override
@@ -27,12 +29,15 @@ class _FlutterwaveScreenState extends State<FlutterwaveScreen> {
   late final WebViewController _controller;
   bool _loading = true;
 
-  // LIVE KEY — Mrs Gloria Magit's Flutterwave account
   static const String _flutterwavePublicKey =
       'FLWPUBK-de7f05a23d41637e5223b1d4939f4dd9-X';
 
   String _sanitize(String input) {
-    return input.replaceAll('"', '').replaceAll("'", '').replaceAll('\n', '').trim();
+    return input
+        .replaceAll('"', '')
+        .replaceAll("'", '')
+        .replaceAll('\n', '')
+        .trim();
   }
 
   @override
@@ -42,11 +47,13 @@ class _FlutterwaveScreenState extends State<FlutterwaveScreen> {
   }
 
   void _setupWebView() {
-    final ref = 'ryaniva_${widget.orderId}_${DateTime.now().millisecondsSinceEpoch}';
+    final ref =
+        'ryaniva_${widget.orderId}_${DateTime.now().millisecondsSinceEpoch}';
 
-    // Real customer email
     String safeEmail = _sanitize(widget.email);
-    if (safeEmail.isEmpty || !safeEmail.contains('@') || !safeEmail.contains('.')) {
+    if (safeEmail.isEmpty ||
+        !safeEmail.contains('@') ||
+        !safeEmail.contains('.')) {
       safeEmail = 'customer@ryaniva.com';
     }
 
@@ -55,6 +62,13 @@ class _FlutterwaveScreenState extends State<FlutterwaveScreen> {
 
     String safeName = _sanitize(widget.name);
     if (safeName.isEmpty) safeName = 'Ryaniva Customer';
+
+    // Set payment options based on selection
+    final paymentOptions = widget.paymentOption == 'banktransfer'
+        ? 'banktransfer'
+        : widget.paymentOption == 'ussd'
+            ? 'ussd'
+            : 'card, banktransfer, ussd';
 
     final htmlContent = '''
 <!DOCTYPE html>
@@ -76,6 +90,7 @@ class _FlutterwaveScreenState extends State<FlutterwaveScreen> {
     .container { text-align: center; padding: 24px; }
     .logo { font-size: 24px; font-weight: bold; color: #1A3A8F; margin-bottom: 8px; }
     .amount { font-size: 32px; font-weight: bold; color: #E85C1A; margin: 16px 0; }
+    .method { font-size: 13px; color: #6B7280; margin-bottom: 8px; }
     .btn {
       background: #1A3A8F;
       color: white;
@@ -105,6 +120,7 @@ class _FlutterwaveScreenState extends State<FlutterwaveScreen> {
     <div class="logo">RYANIVA</div>
     <p style="color:#666; margin:0;">Delivery Payment</p>
     <div class="amount">₦${widget.amount.toStringAsFixed(0)}</div>
+    <p class="method">${widget.paymentOption == 'banktransfer' ? '🏦 Bank Transfer' : widget.paymentOption == 'ussd' ? '📱 USSD' : '💳 Card Payment'}</p>
     <p style="color:#888; font-size:13px;">Order #${widget.orderId.substring(0, 8)}</p>
     <button class="btn" onclick="payWithFlutterwave()">Pay Now</button>
     <button class="cancel" onclick="cancelPayment()">Cancel</button>
@@ -117,7 +133,7 @@ class _FlutterwaveScreenState extends State<FlutterwaveScreen> {
         tx_ref: "$ref",
         amount: ${widget.amount},
         currency: "NGN",
-        payment_options: "card, banktransfer, ussd",
+        payment_options: "$paymentOptions",
         customer: {
           email: "$safeEmail",
           phone_number: "$safePhone",
@@ -178,8 +194,14 @@ class _FlutterwaveScreenState extends State<FlutterwaveScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1A3A8F),
         foregroundColor: Colors.white,
-        title: const Text('Secure Payment',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          widget.paymentOption == 'banktransfer'
+              ? 'Bank Transfer'
+              : widget.paymentOption == 'ussd'
+                  ? 'USSD Payment'
+                  : 'Card Payment',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () {
