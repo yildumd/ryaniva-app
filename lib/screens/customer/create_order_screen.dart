@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../payment/flutterwave_screen.dart';
+import '../payment/bank_transfer_screen.dart';
 import '../../services/location_storage.dart';
 
 class CreateOrderScreen extends StatefulWidget {
@@ -677,8 +678,36 @@ final position = await Geolocator.getCurrentPosition(
                             final totalAmount =
                                 (breakdown['total'] as num).toDouble();
 
-                            if (_paymentMethod == 'CARD' ||
-                                _paymentMethod == 'TRANSFER') {
+                            if (_paymentMethod == 'TRANSFER') {
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => BankTransferScreen(
+                                    orderId: order['id'],
+                                    amount: totalAmount,
+                                    token: auth.token,
+                                    onPaymentComplete: (success) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(success
+                                                ? '✅ Transfer initiated! Order confirmed.'
+                                                : '❌ Transfer cancelled'),
+                                            backgroundColor: success
+                                                ? Colors.green
+                                                : Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ),
+                              );
+                              if (context.mounted) Navigator.pop(context);
+                              return;
+                            }
+
+                            if (_paymentMethod == 'CARD') {
                               await Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -690,9 +719,7 @@ final position = await Geolocator.getCurrentPosition(
                                     name: auth.user?.name ?? 'Ryaniva Customer',
                                     amount: totalAmount,
                                     orderId: order['id'],
-                                    paymentOption: _paymentMethod == 'TRANSFER'
-                                        ? 'banktransfer'
-                                        : 'card',
+                                    paymentOption: 'card',
                                     onPaymentComplete: (success) {
                                       if (context.mounted) {
                                         ScaffoldMessenger.of(context).showSnackBar(
