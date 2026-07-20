@@ -976,9 +976,7 @@ class _TopUpSheetState extends State<_TopUpSheet> {
       context,
       MaterialPageRoute(
         builder: (_) => FlutterwaveScreen(
-          email: widget.auth.user?.phone != null
-              ? '${widget.auth.user!.phone}@ryaniva.com'
-              : 'customer@ryaniva.com',
+          email: 'payments@ryaniva.com.ng',
           phone: widget.auth.user?.phone ?? '',
           name: widget.auth.user?.name ?? 'Ryaniva Customer',
           amount: amount,

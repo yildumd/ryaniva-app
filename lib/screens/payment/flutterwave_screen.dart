@@ -29,8 +29,8 @@ class _FlutterwaveScreenState extends State<FlutterwaveScreen> {
   late final WebViewController _controller;
   bool _loading = true;
 
-  static const String _flutterwavePublicKey =
-      'FLWPUBK-de7f05a23d41637e5223b1d4939f4dd9-X';
+static const String _flutterwavePublicKey =
+    'FLWPUBK-e17d1d963d56434510fed8f2300ac5ce-X';
 
   String _sanitize(String input) {
     return input
