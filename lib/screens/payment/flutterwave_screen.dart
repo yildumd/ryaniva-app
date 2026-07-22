@@ -30,7 +30,7 @@ class _FlutterwaveScreenState extends State<FlutterwaveScreen> {
   bool _loading = true;
 
 static const String _flutterwavePublicKey =
-    'FLWPUBK-e17d1d963d56434510fed8f2300ac5ce-X';
+    'FLWPUBK-932394ae055b743ae3f3394742a07d93-X';
 
   String _sanitize(String input) {
     return input
