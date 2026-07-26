@@ -679,34 +679,34 @@ final position = await Geolocator.getCurrentPosition(
                                 (breakdown['total'] as num).toDouble();
 
                             if (_paymentMethod == 'TRANSFER') {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => BankTransferScreen(
-                                    orderId: order['id'],
-                                    amount: totalAmount,
-                                    token: auth.token,
-                                    onPaymentComplete: (success) {
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(success
-                                                ? '✅ Transfer initiated! Order confirmed.'
-                                                : '❌ Transfer cancelled'),
-                                            backgroundColor: success
-                                                ? Colors.green
-                                                : Colors.red,
-                                          ),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                ),
-                              );
-                              if (context.mounted) Navigator.pop(context);
-                              return;
-                            }
-
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => FlutterwaveScreen(
+        email: 'payments@ryaniva.com.ng',
+        phone: auth.user?.phone ?? '',
+        name: auth.user?.name ?? 'Ryaniva Customer',
+        amount: totalAmount,
+        orderId: order['id'],
+        paymentOption: 'banktransfer',
+        onPaymentComplete: (success) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(success
+                    ? '✅ Payment successful!'
+                    : '❌ Payment cancelled'),
+                backgroundColor: success ? Colors.green : Colors.red,
+              ),
+            );
+          }
+        },
+      ),
+    ),
+  );
+  if (context.mounted) Navigator.pop(context);
+  return;
+}
                             if (_paymentMethod == 'CARD') {
                               await Navigator.push(
                                 context,
