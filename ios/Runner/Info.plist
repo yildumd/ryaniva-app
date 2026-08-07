@@ -28,6 +28,14 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Ryaniva needs camera access to take a profile photo.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Ryaniva needs your location to set pickup and dropoff points for deliveries.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Ryaniva needs your location to set pickup and dropoff points for deliveries.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Ryaniva needs access to your photos to upload a profile picture.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
