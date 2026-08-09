@@ -8,6 +8,8 @@ class DefaultFirebaseOptions {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
+      case TargetPlatform.iOS:
+        return ios;
       default:
         return android;
     }
@@ -27,5 +29,14 @@ class DefaultFirebaseOptions {
     messagingSenderId: '677473249156',
     projectId: 'ryaniva-4867f',
     storageBucket: 'ryaniva-4867f.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyAk4PFSunqDQM7tFrUAa_fAk-x2GPhuSF8',
+    appId: '1:677473249156:ios:d0f66782f49d04fe045fd1',
+    messagingSenderId: '677473249156',
+    projectId: 'ryaniva-4867f',
+    storageBucket: 'ryaniva-4867f.firebasestorage.app',
+    databaseURL: 'https://ryaniva-4867f-default-rtdb.firebaseio.com',
   );
 }
