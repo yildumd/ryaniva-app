@@ -14,6 +14,8 @@
 	<string>ryaniva-4867f</string>
 	<key>STORAGE_BUCKET</key>
 	<string>ryaniva-4867f.firebasestorage.app</string>
+	<key>DATABASE_URL</key>
+	<string>https://ryaniva-4867f-default-rtdb.firebaseio.com</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
