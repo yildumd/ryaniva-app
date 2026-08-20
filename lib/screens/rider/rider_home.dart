@@ -38,6 +38,7 @@ class _RiderHomeState extends State<RiderHome> {
     final token = context.read<AuthProvider>().token;
     try {
       final data = await ApiService.get('/riders/profile', token: token);
+      if (!mounted) return;
       if (data['id'] != null) {
         setState(() {
           _riderProfile = data;
@@ -48,12 +49,14 @@ class _RiderHomeState extends State<RiderHome> {
         _loadOrders();
         _loadActiveOrders();
       } else {
+        if (!mounted) return;
         setState(() {
           _hasProfile = false;
           _profileLoaded = true;
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _hasProfile = false;
         _profileLoaded = true;
