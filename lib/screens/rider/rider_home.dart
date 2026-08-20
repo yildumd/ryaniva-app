@@ -9,6 +9,7 @@ import '../profile_edit_screen.dart';
 import '../notifications_screen.dart';
 import '../help_support_screen.dart';
 import '../privacy_policy_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RiderHome extends StatefulWidget {
   const RiderHome({super.key});
@@ -826,6 +827,51 @@ class _RiderHomeState extends State<RiderHome> {
               Expanded(child: Text(order.dropoffAddress,
                   style: const TextStyle(fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
             ]),
+            if (order.senderPhone != null && order.senderPhone!.isNotEmpty) ...[
+  const SizedBox(height: 8),
+  Row(children: [
+    Icon(Icons.person_outline, color: blue, size: 14),
+    const SizedBox(width: 6),
+    Text('Sender: ', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+    Text(order.senderPhone!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+    const Spacer(),
+    GestureDetector(
+      onTap: () async {
+        final uri = Uri.parse('tel:${order.senderPhone}');
+        if (await canLaunchUrl(uri)) await launchUrl(uri);
+      },
+      child: Icon(Icons.call, color: Colors.green, size: 18),
+    ),
+  ]),
+],
+if (order.recipientName != null && order.recipientName!.isNotEmpty) ...[
+  const SizedBox(height: 4),
+  Row(children: [
+    Icon(Icons.person, color: orange, size: 14),
+    const SizedBox(width: 6),
+    Text('Recipient: ', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+    Text(order.recipientName!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+    if (order.recipientPhone != null && order.recipientPhone!.isNotEmpty) ...[
+      const Spacer(),
+      GestureDetector(
+        onTap: () async {
+          final uri = Uri.parse('tel:${order.recipientPhone}');
+          if (await canLaunchUrl(uri)) await launchUrl(uri);
+        },
+        child: Icon(Icons.call, color: Colors.green, size: 18),
+      ),
+    ],
+  ]),
+],
+if (order.recipientPhone != null && order.recipientPhone!.isNotEmpty) ...[
+  const SizedBox(height: 4),
+  Row(children: [
+    Icon(Icons.phone_outlined, color: orange, size: 14),
+    const SizedBox(width: 6),
+    Text('Recipient Phone: ', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+    Text(order.recipientPhone!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+  ]),
+],
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

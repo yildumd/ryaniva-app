@@ -10,6 +10,9 @@ class Order {
   final double dropoffLng;
   final String itemType;
   final String? itemNote;
+  final String? senderPhone;
+  final String? recipientName;
+  final String? recipientPhone;
   final double distanceKm;
   final double price;
   final String status;
@@ -29,6 +32,9 @@ class Order {
     required this.dropoffLng,
     required this.itemType,
     this.itemNote,
+    this.senderPhone,
+    this.recipientName,
+    this.recipientPhone,
     required this.distanceKm,
     required this.price,
     required this.status,
@@ -50,6 +56,9 @@ class Order {
       dropoffLng: json['dropoffLng'].toDouble(),
       itemType: json['itemType'],
       itemNote: json['itemNote'],
+      senderPhone: json['senderPhone'],
+      recipientName: json['recipientName'],
+      recipientPhone: json['recipientPhone'],
       distanceKm: json['distanceKm'].toDouble(),
       price: json['price'].toDouble(),
       status: json['status'],
