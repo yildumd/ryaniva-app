@@ -22,10 +22,12 @@ class OrderProvider extends ChangeNotifier {
     required String itemType,
     required String paymentMethod,
     String? itemNote,
+    String? senderPhone,
+    String? recipientName,
+    String? recipientPhone,
   }) async {
     _loading = true;
     notifyListeners();
-
     try {
       final res = await ApiService.post('/orders', {
         'pickupLat': pickupLat,
@@ -37,6 +39,9 @@ class OrderProvider extends ChangeNotifier {
         'itemType': itemType,
         'paymentMethod': paymentMethod,
         if (itemNote != null) 'itemNote': itemNote,
+        if (senderPhone != null) 'senderPhone': senderPhone,
+        if (recipientName != null) 'recipientName': recipientName,
+        if (recipientPhone != null) 'recipientPhone': recipientPhone,
       }, token: token);
       return res;
     } catch (e) {

@@ -23,6 +23,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _dropoffController = TextEditingController();
   final _itemTypeController = TextEditingController();
   final _noteController = TextEditingController();
+  final _recipientNameController = TextEditingController();
+  final _recipientPhoneController = TextEditingController();
   String _paymentMethod = 'CASH';
 
   double? _pickupLat;
@@ -476,6 +478,39 @@ final position = await Geolocator.getCurrentPosition(
               ),
               const SizedBox(height: 20),
 
+              // RECIPIENT CONTACT
+const Text('Recipient Name',
+    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+const SizedBox(height: 8),
+TextField(
+  controller: _recipientNameController,
+  decoration: InputDecoration(
+    hintText: 'Name of person receiving the item',
+    prefixIcon: const Icon(Icons.person_outline),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: blue, width: 2),
+    ),
+  ),
+),
+const SizedBox(height: 16),
+const Text('Recipient Phone',
+    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+const SizedBox(height: 8),
+TextField(
+  controller: _recipientPhoneController,
+  keyboardType: TextInputType.phone,
+  decoration: InputDecoration(
+    hintText: 'Phone number of recipient',
+    prefixIcon: const Icon(Icons.phone_outlined),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: blue, width: 2),
+    ),
+  ),
+),
               // PAYMENT METHOD
               const Text('Payment Method',
                   style: TextStyle(
@@ -668,6 +703,9 @@ final position = await Geolocator.getCurrentPosition(
                                 ? 'CARD'
                                 : _paymentMethod,
                             itemNote: _noteController.text.trim(),
+                            senderPhone: auth.user?.phone ?? '',
+recipientName: _recipientNameController.text.trim(),
+recipientPhone: _recipientPhoneController.text.trim(),
                           );
 
                           if (result != null &&
