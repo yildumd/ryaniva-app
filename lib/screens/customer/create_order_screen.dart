@@ -186,26 +186,44 @@ final position = await Geolocator.getCurrentPosition(
   Future<List<Map<String, dynamic>>> _searchAddress(String query) async {
     if (query.trim().length < 3) return [];
     try {
+      const apiKey = 'AIzaSyATmdZdVMqlEw2EwOpymnGYoxmHbkze8eM';
       final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/search'
-        '?q=${Uri.encodeComponent('$query Jos Nigeria')}'
-        '&format=json'
-        '&addressdetails=1'
-        '&limit=8'
-        '&countrycodes=ng',
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json'
+        '?input=${Uri.encodeComponent(query)}'
+        '&components=country:ng'
+        '&location=9.8965,8.8583'
+        '&radius=50000'
+        '&key=$apiKey',
       );
-      final res = await http.get(url, headers: {
-        'User-Agent': 'RyanivaApp/1.0 (contact@ryaniva.com)',
-      });
+      final res = await http.get(url);
       if (res.statusCode == 200) {
-        final List data = jsonDecode(res.body);
-        return data
-            .map<Map<String, dynamic>>((item) => {
-                  'display_name': item['display_name'],
-                  'lat': double.parse(item['lat']),
-                  'lon': double.parse(item['lon']),
-                })
-            .toList();
+        final data = jsonDecode(res.body);
+        if (data['status'] == 'OK') {
+          final predictions = data['predictions'] as List;
+          final results = <Map<String, dynamic>>[];
+          for (final p in predictions) {
+            final placeId = p['place_id'];
+            final detailUrl = Uri.parse(
+              'https://maps.googleapis.com/maps/api/place/details/json'
+              '?place_id=$placeId'
+              '&fields=geometry,formatted_address'
+              '&key=$apiKey',
+            );
+            final detailRes = await http.get(detailUrl);
+            if (detailRes.statusCode == 200) {
+              final detail = jsonDecode(detailRes.body);
+              if (detail['status'] == 'OK') {
+                final loc = detail['result']['geometry']['location'];
+                results.add({
+                  'display_name': p['description'],
+                  'lat': loc['lat'],
+                  'lon': loc['lng'],
+                });
+              }
+            }
+          }
+          return results;
+        }
       }
     } catch (e) {
       // silent fail
