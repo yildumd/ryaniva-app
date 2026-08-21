@@ -133,4 +133,4 @@ class OrderProvider extends ChangeNotifier {
       }
       return {'success': false, 'message': errorMsg};
     }
-  }
+  }}
