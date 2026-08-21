@@ -318,44 +318,14 @@ class _OrderCard extends StatelessWidget {
     }
   }
 
-  Future<void> _confirmCancel(BuildContext context, String orderId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Cancel Order?'),
-        content: const Text('Are you sure you want to cancel this delivery?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false),
-              child: const Text('No', style: TextStyle(color: Colors.grey))),
-          TextButton(onPressed: () => Navigator.pop(context, true),
-              child: const Text('Yes, Cancel',
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      final orderProvider = context.read<OrderProvider>();
-      final token = context.read<AuthProvider>().token;
-      final result = await orderProvider.cancelOrder(orderId, token);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(result['message']),
-              backgroundColor: result['success'] ? Colors.green : Colors.red),
-        );
-        if (result['success']) orderProvider.loadMyOrders(token);
-      }
-    }
-  }
+  content: const Text('Are you sure you want to cancel this delivery?'),
 
   @override
   Widget build(BuildContext context) {
     const blue = Color(0xFF1A3A8F);
     const orange = Color(0xFFE85C1A);
     final isDelivered = order.status == 'DELIVERED';
-    final isCancellable = order.status == 'REQUESTED' || order.status == 'ACCEPTED';
+    final isCancellable = order.status == 'REQUESTED' || order.status == 'ACCEPTED' || order.status == 'PICKED';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -658,33 +628,60 @@ class _TrackTabState extends State<_TrackTab> {
                                   color: blue.withOpacity(0.05),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: Row(
+                                child: Column(
                                   children: [
-                                    const Icon(Icons.motorcycle, color: blue, size: 16),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        order.status == 'ACCEPTED'
-                                            ? 'Rider is heading to pickup location'
-                                            : 'Rider has picked up your item and is on the way',
-                                        style: const TextStyle(fontSize: 12, color: blue),
-                                      ),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.motorcycle, color: blue, size: 16),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            order.status == 'ACCEPTED'
+                                                ? 'Rider is heading to pickup location'
+                                                : 'Rider has picked up your item and is on the way',
+                                            style: const TextStyle(fontSize: 12, color: blue),
+                                          ),
+                                        ),
+                                      ],
                                     ),
+                                    if (order.riderName != null) ...[
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.person, color: blue, size: 16),
+                                          const SizedBox(width: 8),
+                                          Text('Rider: ${order.riderName}',
+                                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                                          const Spacer(),
+                                          if (order.riderPhone != null)
+                                            GestureDetector(
+                                              onTap: () async {
+                                                final uri = Uri.parse('tel:${order.riderPhone}');
+                                                if (await canLaunchUrl(uri)) await launchUrl(uri);
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.green,
+                                                  borderRadius: BorderRadius.circular(20),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(Icons.call, color: Colors.white, size: 14),
+                                                    const SizedBox(width: 4),
+                                                    Text(order.riderPhone!,
+                                                        style: const TextStyle(color: Colors.white, fontSize: 12)),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
                             ],
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-}
 
 // ── WALLET TAB ──
 class _WalletTab extends StatefulWidget {
