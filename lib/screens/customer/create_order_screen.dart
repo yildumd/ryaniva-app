@@ -664,16 +664,25 @@ TextField(
                   onPressed: orders.loading
                       ? null
                       : () async {
-                          if (_pickupController.text.isEmpty ||
-                              _dropoffController.text.isEmpty ||
-                              _itemTypeController.text.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text(
-                                      'Please fill all required fields')),
-                            );
-                            return;
-                          }
+                         if (_pickupController.text.isEmpty ||
+    _dropoffController.text.isEmpty ||
+    _itemTypeController.text.isEmpty) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+        content: Text(
+            'Please fill all required fields')),
+  );
+  return;
+}
+if (_recipientNameController.text.trim().isEmpty ||
+    _recipientPhoneController.text.trim().isEmpty) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+        content: Text(
+            'Please enter recipient name and phone number')),
+  );
+  return;
+}
 
                           // Use landmark coords if no GPS selected
                           if (_pickupLat == null) {
