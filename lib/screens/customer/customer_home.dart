@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import 'create_order_screen.dart';
@@ -35,8 +36,6 @@ class _CustomerHomeState extends State<CustomerHome> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final orders = context.watch<OrderProvider>();
-    const blue = Color(0xFF1A3A8F);
-    const orange = Color(0xFFE85C1A);
 
     final pages = [
       _HomeTab(auth: auth, orders: orders),
@@ -45,6 +44,8 @@ class _CustomerHomeState extends State<CustomerHome> {
       _WalletTab(auth: auth),
       _ProfileTab(auth: auth),
     ];
+
+    const blue = Color(0xFF1A3A8F);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -95,7 +96,6 @@ class _HomeTab extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Container(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
                 decoration: const BoxDecoration(
@@ -139,10 +139,7 @@ class _HomeTab extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // Services
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
@@ -195,10 +192,7 @@ class _HomeTab extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // Recent Orders
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
@@ -213,7 +207,6 @@ class _HomeTab extends StatelessWidget {
                   ],
                 ),
               ),
-
               if (orders.loading)
                 const Center(child: CircularProgressIndicator(color: Color(0xFF1A3A8F)))
               else if (orders.orders.isEmpty)
@@ -240,7 +233,6 @@ class _HomeTab extends StatelessWidget {
                     return _OrderCard(order: order, auth: auth, compact: true);
                   },
                 ),
-
               const SizedBox(height: 100),
             ],
           ),
@@ -318,14 +310,78 @@ class _OrderCard extends StatelessWidget {
     }
   }
 
-  content: const Text('Are you sure you want to cancel this delivery?'),
+  Future<void> _cancelOrder(BuildContext context) async {
+    String? selectedReason;
+    final reasons = [
+      'Changed my mind',
+      'Wrong address entered',
+      'Found another option',
+      'Taking too long',
+      'Item no longer needed',
+      'Other',
+    ];
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Cancel Delivery'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Why are you cancelling?',
+                  style: TextStyle(fontSize: 13, color: Colors.grey)),
+              const SizedBox(height: 12),
+              ...reasons.map((reason) => RadioListTile<String>(
+                title: Text(reason, style: const TextStyle(fontSize: 13)),
+                value: reason,
+                groupValue: selectedReason,
+                dense: true,
+                onChanged: (val) => setDialogState(() => selectedReason = val),
+              )),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep Order'),
+            ),
+            ElevatedButton(
+              onPressed: selectedReason == null ? null : () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Cancel Delivery', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed == true && selectedReason != null) {
+      final token = context.read<AuthProvider>().token;
+      final orderProvider = context.read<OrderProvider>();
+      final result = await orderProvider.cancelOrder(order.id, token, cancelReason: selectedReason);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']),
+            backgroundColor: result['success'] ? Colors.green : Colors.red,
+          ),
+        );
+        if (result['success']) orderProvider.loadMyOrders(token);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     const blue = Color(0xFF1A3A8F);
     const orange = Color(0xFFE85C1A);
     final isDelivered = order.status == 'DELIVERED';
-    final isCancellable = order.status == 'REQUESTED' || order.status == 'ACCEPTED' || order.status == 'PICKED';
+    final isCancellable = order.status == 'REQUESTED' ||
+        order.status == 'ACCEPTED' ||
+        order.status == 'PICKED';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -394,7 +450,7 @@ class _OrderCard extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () => _confirmCancel(context, order.id),
+                    onPressed: () => _cancelOrder(context),
                     icon: const Icon(Icons.close, size: 14),
                     label: const Text('Cancel Order'),
                     style: OutlinedButton.styleFrom(
@@ -650,9 +706,11 @@ class _TrackTabState extends State<_TrackTab> {
                                         children: [
                                           const Icon(Icons.person, color: blue, size: 16),
                                           const SizedBox(width: 8),
-                                          Text('Rider: ${order.riderName}',
-                                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                                          const Spacer(),
+                                          Expanded(
+                                            child: Text('Rider: ${order.riderName}',
+                                                style: const TextStyle(
+                                                    fontSize: 12, fontWeight: FontWeight.w600)),
+                                          ),
                                           if (order.riderPhone != null)
                                             GestureDetector(
                                               onTap: () async {
@@ -660,17 +718,21 @@ class _TrackTabState extends State<_TrackTab> {
                                                 if (await canLaunchUrl(uri)) await launchUrl(uri);
                                               },
                                               child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                padding: const EdgeInsets.symmetric(
+                                                    horizontal: 10, vertical: 4),
                                                 decoration: BoxDecoration(
                                                   color: Colors.green,
                                                   borderRadius: BorderRadius.circular(20),
                                                 ),
                                                 child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
                                                   children: [
-                                                    const Icon(Icons.call, color: Colors.white, size: 14),
+                                                    const Icon(Icons.call,
+                                                        color: Colors.white, size: 14),
                                                     const SizedBox(width: 4),
                                                     Text(order.riderPhone!,
-                                                        style: const TextStyle(color: Colors.white, fontSize: 12)),
+                                                        style: const TextStyle(
+                                                            color: Colors.white, fontSize: 12)),
                                                   ],
                                                 ),
                                               ),
@@ -682,6 +744,17 @@ class _TrackTabState extends State<_TrackTab> {
                                 ),
                               ),
                             ],
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
 
 // ── WALLET TAB ──
 class _WalletTab extends StatefulWidget {
@@ -845,7 +918,6 @@ class _ProfileTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const blue = Color(0xFF1A3A8F);
-    const orange = Color(0xFFE85C1A);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -947,6 +1019,7 @@ class _ProfileTab extends StatelessWidget {
 
   Widget _divider() => const Divider(height: 1, indent: 56);
 }
+
 // ── TOP UP SHEET ──
 class _TopUpSheet extends StatefulWidget {
   final dynamic auth;
@@ -998,7 +1071,9 @@ class _TopUpSheetState extends State<_TopUpSheet> {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Payment received but wallet update failed. Contact support.')),
+                    const SnackBar(
+                        content: Text(
+                            'Payment received but wallet update failed. Contact support.')),
                   );
                 }
               }
@@ -1102,18 +1177,6 @@ class _TopUpSheetState extends State<_TopUpSheet> {
                           : 'Top Up ₦${_amountController.text} via Flutterwave',
                       style: const TextStyle(
                           fontSize: 15, fontWeight: FontWeight.w600)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.security, size: 14, color: Colors.grey[400]),
-                const SizedBox(width: 4),
-                Text('Secured by Flutterwave',
-                    style: TextStyle(color: Colors.grey[400], fontSize: 12)),
-              ],
             ),
           ),
         ],
