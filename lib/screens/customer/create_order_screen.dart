@@ -196,8 +196,11 @@ final position = await Geolocator.getCurrentPosition(
         '&key=$apiKey',
       );
       final res = await http.get(url);
+      print('Places API status: ${res.statusCode}');
+      print('Places API body: ${res.body}');
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
+        print('Places status: ${data['status']}');
         if (data['status'] == 'OK') {
           final predictions = data['predictions'] as List;
           final results = <Map<String, dynamic>>[];
