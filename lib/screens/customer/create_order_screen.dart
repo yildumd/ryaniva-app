@@ -186,7 +186,7 @@ final position = await Geolocator.getCurrentPosition(
   Future<List<Map<String, dynamic>>> _searchAddress(String query) async {
     if (query.trim().length < 3) return [];
     try {
-      const apiKey = 'AIzaSyATmdZdVMqlEw2EwOpymnGYoxmHbkze8eM';
+      const apiKey = 'AIzaSyCI8Y_XNplWLmrhYcmyZTj3hQy0dKIYgSM';
       final url = Uri.parse(
         'https://maps.googleapis.com/maps/api/place/autocomplete/json'
         '?input=${Uri.encodeComponent(query)}'
