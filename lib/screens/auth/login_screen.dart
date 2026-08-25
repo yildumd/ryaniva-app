@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -14,6 +14,40 @@ class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscure = true;
+  bool _rememberMe = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedPhone = prefs.getString('saved_phone');
+    final savedPassword = prefs.getString('saved_password');
+    final remember = prefs.getBool('remember_me') ?? false;
+    if (remember && savedPhone != null && savedPassword != null) {
+      setState(() {
+        _phoneController.text = savedPhone;
+        _passwordController.text = savedPassword;
+        _rememberMe = true;
+      });
+    }
+  }
+
+  Future<void> _saveCredentials(String phone, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_rememberMe) {
+      await prefs.setString('saved_phone', phone);
+      await prefs.setString('saved_password', password);
+      await prefs.setBool('remember_me', true);
+    } else {
+      await prefs.remove('saved_phone');
+      await prefs.remove('saved_password');
+      await prefs.setBool('remember_me', false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,24 +64,29 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              Center(child: Image.asset('assets/images/logo.png', height: 80)),
+              Center(child: Image.asset('assets/images/logo.png', height: 80,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 80, height: 80,
+                    decoration: const BoxDecoration(color: blue, shape: BoxShape.circle),
+                    child: const Icon(Icons.local_shipping, color: Colors.white, size: 40),
+                  ))),
               const SizedBox(height: 12),
               const Center(
                 child: Text('RYANIVA',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold,
-                      color: blue, letterSpacing: 3)),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold,
+                        color: blue, letterSpacing: 3)),
               ),
               const SizedBox(height: 4),
               Center(
                 child: Text('BUSINESS SERVICES',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500], letterSpacing: 2)),
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500], letterSpacing: 2)),
               ),
               const SizedBox(height: 36),
               const Text('Welcome back',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF1A1A1A))),
               const SizedBox(height: 6),
               Text('Sign in to your account',
-                style: TextStyle(fontSize: 15, color: Colors.grey[600])),
+                  style: TextStyle(fontSize: 15, color: Colors.grey[600])),
               const SizedBox(height: 28),
               TextField(
                 controller: _phoneController,
@@ -81,63 +120,67 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              if (auth.error.isNotEmpty) ...[
-                const SizedBox(height: 12),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Checkbox(
+                    value: _rememberMe,
+                    onChanged: (v) => setState(() => _rememberMe = v ?? false),
+                    activeColor: blue,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  ),
+                  const Text('Remember me', style: TextStyle(fontSize: 14)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (auth.error.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: Colors.red[50],
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(auth.error, style: TextStyle(color: Colors.red[700])),
+                  child: Text(auth.error,
+                      style: const TextStyle(color: Colors.red, fontSize: 13)),
                 ),
-              ],
-              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-onPressed: auth.loading ? null : () async {
-  final success = await auth.login(
-    _phoneController.text.trim(),
-    _passwordController.text,
-  );
-  if (context.mounted) {
-    if (success) {
-      Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.error)),
-      );
-    }
-  }
-},
+                  onPressed: auth.loading ? null : () async {
+                    final phone = _phoneController.text.trim();
+                    final password = _passwordController.text.trim();
+                    if (phone.isEmpty || password.isEmpty) return;
+                    await _saveCredentials(phone, password);
+                    await auth.login(phone, password);
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: blue,
+                    backgroundColor: orange,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: auth.loading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
                       : const Text('Sign In',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("Don't have an account? ",
-                      style: TextStyle(color: Colors.grey[600])),
-                  GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const RegisterScreen()),
+              const SizedBox(height: 20),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                  child: RichText(
+                    text: TextSpan(
+                      text: "Don't have an account? ",
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      children: const [
+                        TextSpan(text: 'Register', style: TextStyle(color: blue, fontWeight: FontWeight.bold)),
+                      ],
                     ),
-                    child: const Text('Sign Up',
-                        style: TextStyle(color: orange, fontWeight: FontWeight.w600)),
                   ),
-                ],
+                ),
               ),
             ],
           ),
