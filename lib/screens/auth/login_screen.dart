@@ -153,7 +153,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     final password = _passwordController.text.trim();
                     if (phone.isEmpty || password.isEmpty) return;
                     await _saveCredentials(phone, password);
-                    await auth.login(phone, password);
+                    final success = await auth.login(phone, password);
+if (success && context.mounted) {
+  Navigator.of(context).popUntil((route) => route.isFirst);
+}
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: orange,
