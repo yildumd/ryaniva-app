@@ -1,9 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../auth/login_screen.dart';
 import '../auth/register_screen.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeIn;
+  late Animation<Offset> _slideUp;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+    _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _slideUp = Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -11,240 +37,200 @@ class WelcomeScreen extends StatelessWidget {
     const darkBlue = Color(0xFF0D2260);
     const orange = Color(0xFFE85C1A);
 
-    return Scaffold(
-      backgroundColor: darkBlue,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
-                      child: Column(
-                        children: [
-                          Image.asset('assets/images/logo.png', height: 80),
-                          const SizedBox(height: 12),
-                          const Text('RYANIVA',
-                            style: TextStyle(color: Colors.white, fontSize: 28,
-                                fontWeight: FontWeight.bold, letterSpacing: 3)),
-                          const SizedBox(height: 4),
-                          Text('BUSINESS SERVICES',
-                            style: TextStyle(color: Colors.white.withOpacity(0.6),
-                                fontSize: 12, letterSpacing: 2)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: orange.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: orange.withOpacity(0.5), width: 0.5),
-                      ),
-                      child: Text('Now live in Jos, Nigeria',
-                        style: TextStyle(color: orange, fontSize: 12, fontWeight: FontWeight.w500)),
-                    ),
-                    const SizedBox(height: 20),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 32),
-                      child: Text('Connecting Places,\nDelivering Possibilities.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white, fontSize: 26,
-                            fontWeight: FontWeight.bold, height: 1.3)),
-                    ),
-                    const SizedBox(height: 14),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40),
-                      child: Text(
-                        'Request a rider in seconds. Track every move in real time. Pay your way — cash or card.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white.withOpacity(0.6),
-                            fontSize: 14, height: 1.6),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 80),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0a1a5c),
-                        borderRadius: BorderRadius.circular(28),
-                        border: Border.all(color: Colors.white.withOpacity(0.15), width: 2),
-                      ),
-                      child: Column(
-                        children: [
-                          Container(width: 36, height: 4,
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(2))),
-                          const SizedBox(height: 14),
-                          Image.asset('assets/images/logo.png', height: 36),
-                          const SizedBox(height: 6),
-                          Text('Welcome to Ryaniva',
-                            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 10)),
-                          const SizedBox(height: 10),
-                          _mockInput('Phone Number', '0801 234 5678'),
-                          const SizedBox(height: 5),
-                          _mockInput('Password', '••••••••'),
-                          const SizedBox(height: 10),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 9),
-                            decoration: BoxDecoration(color: blue, borderRadius: BorderRadius.circular(8)),
-                            child: const Text('Sign In', textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Row(
-                        children: [
-                          _statBox('3', 'User roles', orange),
-                          const SizedBox(width: 8),
-                          _statBox('60s', 'Match time', orange),
-                          const SizedBox(width: 8),
-                          _statBox('24/7', 'Tracking', orange),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        children: [
-                          _featureRow(Icons.map_outlined, blue, 'Real-time GPS tracking',
-                              'Watch your rider on a live map from pickup to your door.'),
-                          const SizedBox(height: 12),
-                          _featureRow(Icons.payments_outlined, orange, 'Pay your way',
-                              'Cash on delivery or Paystack — card, bank transfer, USSD.'),
-                          const SizedBox(height: 12),
-                          _featureRow(Icons.calculate_outlined, blue, 'Transparent pricing',
-                              '₦500 base fare + ₦80/km. See the exact price before you confirm.'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                  ],
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-              decoration: BoxDecoration(
-                color: darkBlue,
-                border: Border(top: BorderSide(color: Colors.white.withOpacity(0.1), width: 0.5)),
-              ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: darkBlue,
+        body: SafeArea(
+          child: FadeTransition(
+            opacity: _fadeIn,
+            child: SlideTransition(
+              position: _slideUp,
               child: Column(
                 children: [
-                  SizedBox(
-                    width: double.infinity, height: 52,
-                    child: ElevatedButton.icon(
-                      onPressed: () => Navigator.push(
-                        context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
-                      icon: const Icon(Icons.rocket_launch_outlined, size: 18),
-                      label: const Text('Get Started',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: orange, foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 40),
+
+                          // ── LOGO ──
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.asset('assets/images/logo.png', height: 36,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 36, height: 36,
+                                    decoration: BoxDecoration(
+                                        color: orange, shape: BoxShape.circle),
+                                    child: const Icon(Icons.local_shipping, color: Colors.white, size: 20),
+                                  )),
+                              const SizedBox(width: 10),
+                              const Text('RYANIVA',
+                                  style: TextStyle(color: Colors.white, fontSize: 26,
+                                      fontWeight: FontWeight.w800, letterSpacing: 3)),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: orange.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: orange.withOpacity(0.4)),
+                            ),
+                            child: const Text('Now live in Jos, Nigeria',
+                                style: TextStyle(color: orange, fontSize: 12, fontWeight: FontWeight.w600)),
+                          ),
+
+                          const SizedBox(height: 48),
+
+                          // ── HEADLINE ──
+                          const Text('Fast delivery,\nanywhere in Jos.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.white, fontSize: 32,
+                                  fontWeight: FontWeight.w800, height: 1.2)),
+                          const SizedBox(height: 14),
+                          Text(
+                            'Request a rider in seconds. Track every move in real time. Pay cash or card.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white.withOpacity(0.55),
+                                fontSize: 15, height: 1.6),
+                          ),
+
+                          const SizedBox(height: 40),
+
+                          // ── STATS ROW ──
+                          Row(
+                            children: [
+                              _stat('60s', 'Rider match', orange),
+                              const SizedBox(width: 8),
+                              _stat('24/7', 'Available', orange),
+                              const SizedBox(width: 8),
+                              _stat('Live', 'GPS tracking', orange),
+                            ],
+                          ),
+
+                          const SizedBox(height: 32),
+
+                          // ── FEATURES ──
+                          _feature(Icons.location_on_outlined, blue,
+                              'Real-time tracking',
+                              'Watch your rider on a live map from pickup to your door.'),
+                          const SizedBox(height: 10),
+                          _feature(Icons.payments_outlined, orange,
+                              'Pay your way',
+                              'Cash on delivery, card, or bank transfer — your choice.'),
+                          const SizedBox(height: 10),
+                          _feature(Icons.calculate_outlined, blue,
+                              'Clear pricing',
+                              '₦800 base fare + ₦150/km. See the exact price before confirming.'),
+
+                          const SizedBox(height: 40),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity, height: 52,
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.push(
-                        context, MaterialPageRoute(builder: (_) => const LoginScreen())),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withOpacity(0.3), width: 1),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: const Text('I already have an account', style: TextStyle(fontSize: 15)),
+
+                  // ── BOTTOM BUTTONS ──
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+                    decoration: BoxDecoration(
+                      color: darkBlue,
+                      border: Border(
+                          top: BorderSide(color: Colors.white.withOpacity(0.08))),
+                    ),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity, height: 54,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.push(context,
+                                MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: orange,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: const Text('Get Started',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity, height: 54,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.push(context,
+                                MaterialPageRoute(builder: (_) => const LoginScreen())),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              side: BorderSide(color: Colors.white.withOpacity(0.25)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: const Text('I already have an account',
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _mockInput(String label, String value) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(8)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 8)),
-          Text(value, style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 10)),
-        ],
-      ),
-    );
-  }
-
-  Widget _statBox(String number, String label, Color accent) {
+  Widget _stat(String value, String label, Color accent) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.08), width: 0.5),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
         ),
-        child: Column(
-          children: [
-            Text(number, style: TextStyle(color: accent, fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 2),
-            Text(label, style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 10)),
-          ],
-        ),
+        child: Column(children: [
+          Text(value, style: TextStyle(color: accent, fontSize: 22, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 3),
+          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 11)),
+        ]),
       ),
     );
   }
 
-  Widget _featureRow(IconData icon, Color color, String title, String desc) {
+  Widget _feature(IconData icon, Color color, String title, String desc) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.08), width: 0.5),
+        border: Border.all(color: Colors.white.withOpacity(0.07)),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(color: color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.white,
-                    fontSize: 13, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 2),
-                Text(desc, style: TextStyle(color: Colors.white.withOpacity(0.55),
-                    fontSize: 12, height: 1.4)),
-              ],
-            ),
-          ),
-        ],
-      ),
+      child: Row(children: [
+        Container(
+          width: 42, height: 42,
+          decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12)),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        const SizedBox(width: 14),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(color: Colors.white,
+                fontSize: 14, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 3),
+            Text(desc, style: TextStyle(color: Colors.white.withOpacity(0.5),
+                fontSize: 12, height: 1.4)),
+          ],
+        )),
+      ]),
     );
   }
 }
