@@ -147,4 +147,4 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       return false;
     }
-  }
+  }}
