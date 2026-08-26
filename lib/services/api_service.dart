@@ -52,4 +52,18 @@ class ApiService {
     );
     return jsonDecode(response.body);
   }
+
+  static Future<Map<String, dynamic>> delete(
+    String path, {
+    String token = '',
+  }) async {
+    final response = await http.delete(
+      Uri.parse('${ApiConfig.baseUrl}$path'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+      },
+    );
+    return jsonDecode(response.body);
+  }
 }

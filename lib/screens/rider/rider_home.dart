@@ -712,7 +712,34 @@ class _RiderHomeState extends State<RiderHome> {
               _profileItem(Icons.privacy_tip_outlined, 'Privacy Policy', () =>
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()))),
               _div(),
-              _profileItem(Icons.logout, 'Logout', () => auth.logout(), color: Colors.red),
+              _profileItem(Icons.delete_forever, 'Delete Account', () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        title: const Text('Delete Account'),
+                        content: const Text('This will permanently delete your account and all your data. This cannot be undone.'),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true && context.mounted) {
+                      final success = await context.read<AuthProvider>().deleteAccount();
+                      if (!success && context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Failed to delete account.'), backgroundColor: Colors.red),
+                        );
+                      }
+                    }
+                  }, color: Colors.red),
+                  _div(),
+                  _profileItem(Icons.logout, 'Logout', () => auth.logout(), color: Colors.red),
             ]),
           ),
         ]),

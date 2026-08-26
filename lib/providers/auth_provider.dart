@@ -135,4 +135,16 @@ class AuthProvider extends ChangeNotifier {
     await _storage.deleteAll();
     notifyListeners();
   }
-}
+
+  Future<bool> deleteAccount() async {
+    try {
+      await ApiService.delete('/auth/account', token: _token);
+      _token = '';
+      _user = null;
+      await _storage.deleteAll();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
