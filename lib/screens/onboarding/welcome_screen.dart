@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../auth/login_screen.dart';
 import '../auth/register_screen.dart';
+import '../guest_browse_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -172,6 +173,17 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                             child: const Text('I already have an account',
                                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
                           ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: () => Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => const GuestBrowseScreen())),
+                          child: Text('Browse without account',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.45),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              )),
                         ),
                       ],
                     ),
